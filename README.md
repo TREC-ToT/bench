@@ -18,7 +18,7 @@ The following benchmarks (& runs) are available:
 ## optional: create new environment using py-env virtual-env
 ## pyenv virtualenv 3.8.11 trec-tot-benchmarks
 # install requirements 
-pip install ir_datasets sentence-transformers==2.2.2 pyserini==0.20.0 pytrec_eval faiss-cpu==1.6.5
+pip install ir_datasets sentence-transformers==2.2.2 pyserini==0.20.0 pytrec_eval faiss-cpu==1.6.5 ranx==0.3.7
 ``` 
 
 After downloading the files (see guidelines), set DATA_PATH to the folder which 

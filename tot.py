@@ -145,13 +145,13 @@ def register(path):
 
 if __name__ == '__main__':
 
-    path = input("Enter data path:")
+    path = "./data"
 
     register(path.strip())
 
     sets = []
 
-    for split in {"train", "dev", "test"}:
+    for split in {"train", "dev"}:
         name = split
         sets.append(NAME + ":" + name)
 

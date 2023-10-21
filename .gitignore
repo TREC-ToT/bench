@@ -2,6 +2,7 @@
 .python-version
 anserini_docs
 anserini_indicies
+data
 .DS_Store
 dense_hs.*
 best_models.py
