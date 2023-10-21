@@ -22,6 +22,10 @@ def sentence_decomposition(dataset, outpath):
         
         decomposed_queries[q.query_id] = subqueries
     
-    with open(f"{outpath}/sentence_decomposed_queries.json", 'w', encoding="utf-8") as fp:
+    queries_file = f"{outpath}/sentence_decomposed_queries.json"
+
+    with open(queries_file, 'w', encoding="utf-8") as fp:
         json.dump(decomposed_queries, fp)
+
+    return queries_file
 
