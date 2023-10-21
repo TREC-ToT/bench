@@ -10,6 +10,9 @@ from pyserini.trectools import TrecRun
 from pyserini.fusion import reciprocal_rank_fusion
 from ranx import Qrels, Run, evaluate
 
+from modules import sentence_decomposition
+import tot
+import ir_datasets
 
 def get_index_paths(base_dir : str) -> Dict:
     """
@@ -126,4 +129,16 @@ def main():
             json.dump(results, output_f, indent=4)
 
 if __name__ == '__main__':
-    main()
+    # put these into params after refact the code above
+
+    data_path = "./data"
+    decomposed_queries_path = "./data/decomposed_queries"
+    split = "dev"
+
+    tot.register(data_path)
+    
+    irds_name = "trec-tot:" + split
+    dataset = ir_datasets.load(irds_name)
+    sentence_decomposition(dataset, decomposed_queries_path)
+    
+    #main()
