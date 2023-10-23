@@ -7,7 +7,7 @@ import re
 base = '/Users/aprameya/Desktop/llms-project/data/'
 EMBEDDING_MODEL = "text-embedding-ada-002"
 GPT_MODEL = "gpt-4"
-openai.api_key = "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"
+openai.api_key = ""
 
 
 jsonObjdata = pd.read_json("/Users/aprameya/Downloads/corpus.jsonl", lines=True)
