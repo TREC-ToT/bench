@@ -18,7 +18,7 @@ import ir_datasets
 from src import utils
 import pytrec_eval
 
-METRICS = "recall_10,recall_100,recall_1000,ndcg_cut_10,ndcg_cut_100,ndcg_cut_1000,recip_rank"
+METRICS = "P_1,recall_10,recall_100,recall_1000,ndcg_cut_10,ndcg_cut_100,ndcg_cut_1000,recip_rank"
 
 log = logging.getLogger(__name__)
 
@@ -78,8 +78,6 @@ def main():
 
     if args.rm3 == 'y':
         searcher.set_rm3()
-
-    run_result = None
 
     # Retrieve
     run_result = []
