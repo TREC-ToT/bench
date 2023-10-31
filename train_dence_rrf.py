@@ -166,20 +166,20 @@ if __name__ == '__main__':
     import torch
     eval_batch_size = 64
     device = 'cpu'
-    with torch.no_grad():
-        query_embeddings = model.encode(queries, batch_size=eval_batch_size, show_progress_bar=True,
-                                        convert_to_numpy=True, device=device)
+    # with torch.no_grad():
+    #     query_embeddings = model.encode(queries, batch_size=eval_batch_size, show_progress_bar=True,
+    #                                     convert_to_numpy=True, device=device)
 
-    top_k = 10
-    scores, raw_doc_ids = index.search(query_embeddings, k=top_k)
-    run = {}
-    for qid, sc, rdoc_ids in zip(qids, scores, raw_doc_ids):
-        run[qid] = {}
-        for s, rdid in zip(sc, rdoc_ids):
-            if rdid == -1:
-                log.warning(f"invalid doc ids!")
-                continue
-            run[qid][idx_to_docid[rdid]] = float(s)
+    # top_k = 10
+    # scores, raw_doc_ids = index.search(query_embeddings, k=top_k)
+    # run = {}
+    # for qid, sc, rdoc_ids in zip(qids, scores, raw_doc_ids):
+    #     run[qid] = {}
+    #     for s, rdid in zip(sc, rdoc_ids):
+    #         if rdid == -1:
+    #             log.warning(f"invalid doc ids!")
+    #             continue
+    #         run[qid][idx_to_docid[rdid]] = float(s)
 
     # return run
     # for split, dataset in irds_splits.items():
