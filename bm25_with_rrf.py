@@ -29,7 +29,7 @@ def main():
 
     parser.add_argument("--decomposition_method", default="llm", help="how to decompose")
 
-    parser.add_argument("--data_path", default="/home/ddo/CMU/PLLM/TREC-TOT", help="location to dataset")
+    parser.add_argument("--data_path", default="./data", help="location to dataset")
 
     parser.add_argument("--split", choices={"train", "dev", "test"}, default="dev", help="split to run")
 
@@ -59,14 +59,11 @@ def main():
     irds_name = "trec-tot:" + args.split
     dataset = ir_datasets.load(irds_name)
     if args.decomposition_method == "llm":
-        queries_expanded = json.load(open(f"{args.data_path}/decomposed_queries/llm_decomposed_queries.json"))
-        # queries_expanded = llm_based_decomposition(dataset, f"{args.data_path}/decomposed_queries")
+        queries_expanded = llm_based_decomposition(dataset, f"{args.data_path}/decomposed_queries")
     else:
-        queries_expanded = json.load(open(f"{args.data_path}/decomposed_queries/sentence_decomposed_queries.json"))
-        # queries_expanded = sentence_decomposition(dataset, f"{args.data_path}/decomposed_queries")
+        queries_expanded = sentence_decomposition(dataset, f"{args.data_path}/decomposed_queries")
 
-    queries = queries_expanded
-    # queries = json.load(open(queries_expanded))
+    queries = json.load(open(queries_expanded))
 
     run_save_folder = f'{args.output_dir}BM25-RRF'
     if args.decomposition_method == "llm":
@@ -76,7 +73,6 @@ def main():
 
     run_save_full = f"{run_save_folder}/{args.split}.run"
 
-    # Change4 this to dense retriever
     searcher = LuceneSearcher(os.path.join(args.index_path, args.index_name))
     searcher.set_bm25(k1=args.param_k1, b=args.param_b)
 
@@ -85,30 +81,10 @@ def main():
 
     # Retrieve
     run_result = []
-    import torch
-    import src.encode as encode
-    from sentence_transformers import SentenceTransformer, losses, models
-    # index, (idx_to_docid, docid_to_idx) = encode.encode_dataset_faiss(model, embedding_size=args.embed_size,
-    #                                                                   dataset=irds_splits["train"],
-    #                                                                   device=args.device,
-    #                                                                   encode_batch_size=args.encode_batch_size)
 
-    model = SentenceTransformer("/home/ddo/CMU/PLLM/llms-project/dense_models/baseline_distilbert_0/model", device="cuda")
     for query_id in tqdm(queries):
         for sintetic_query_id in queries[query_id]:
-            run = encode.create_run_faiss(model=model,
-                                      dataset=dataset,
-                                      query_type=args.query, device=args.device,
-                                      eval_batch_size=args.encode_batch_size,
-                                      index=index, idx_to_docid=idx_to_docid,
-                                      docid_to_idx=docid_to_idx,
-                                      top_k=args.n_hits)
-            # hits = searcher.search(f'{queries[query_id][sintetic_query_id]}', k=args.K)
-            # with torch.no_grad():
-            #     query_embeddings = model.encode(queries, batch_size=4, show_progress_bar=True,
-            #                                     convert_to_numpy=True, device="cuda")
-
-            # scores, raw_doc_ids = index.search(query_embeddings, k=10)
+            hits = searcher.search(f'{queries[query_id][sintetic_query_id]}', k=args.K)
             sintetic_query_results = []
             for rank, hit in enumerate(hits, start=1):
                 sintetic_query_results.append((query_id, 'Q0', hit.docid, rank, hit.score, f'{query_id}_{sintetic_query_id}'))
