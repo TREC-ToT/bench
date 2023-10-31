@@ -76,8 +76,25 @@ if __name__ == '__main__':
 
     irds_splits = {}
     st_data = {}
+    args.decomposition_method = "llm"
+    if args.decomposition_method == "llm":
+        queries_expanded = "/home/ddo/CMU/PLLM/TREC-TOT/decomposed_queries/llm_decomposed_queries.json"
+    else:
+        queries_expanded = "/home/ddo/CMU/PLLM/TREC-TOT/decomposed_queries/sentence_decomposed_queries.json"
 
+    queries = json.load(open(queries_expanded))
+    args.output_dir = "/home/ddo/CMU/PLLM/TREC-TOT/"
+    run_save_folder = f'{args.output_dir}DENSE-RRF'
+    if args.decomposition_method == "llm":
+        run_save_folder += f'-llm'
     # splits
+    args.run_number = 1
+    args.rm3 = 'y'
+    args.split = 'dev'
+    run_save_folder += f'-RM3-{args.run_number}' if args.rm3 == 'y' else f'-{args.run_number}'
+    
+    run_save_full = f"{run_save_folder}/{args.split}.run"
+
     for split in {"train", "dev"}:
         irds_splits[split] = ir_datasets.load(f"trec-tot:{split}")
 
@@ -139,29 +156,55 @@ if __name__ == '__main__':
         pass
 
     split_qrels = {}
-    for split, dataset in irds_splits.items():
-        log.info(f"running & evaluating {split}")
+    model.eval()
 
-        run = encode.create_run_faiss(model=model,
-                                      dataset=dataset,
-                                      query_type=args.query, device=args.device,
-                                      eval_batch_size=args.encode_batch_size,
-                                      index=index, idx_to_docid=idx_to_docid,
-                                      docid_to_idx=docid_to_idx,
-                                      top_k=args.n_hits)
-        runs[split] = run
+    qids = []
+    # queries = []
+    # for query in queries:
+    #     queries.append(utils.get_query(query, query_type))
+    #     qids.append(query.query_id)
+    import torch
+    eval_batch_size = 64
+    device = 'cpu'
+    with torch.no_grad():
+        query_embeddings = model.encode(queries, batch_size=eval_batch_size, show_progress_bar=True,
+                                        convert_to_numpy=True, device=device)
 
-        if dataset.has_qrels():
-            qrel, n_missing = utils.get_qrel(dataset, run)
-            split_qrels[split] = qrel
-            evaluator = pytrec_eval.RelevanceEvaluator(
-                qrel, metrics)
+    top_k = 10
+    scores, raw_doc_ids = index.search(query_embeddings, k=top_k)
+    run = {}
+    for qid, sc, rdoc_ids in zip(qids, scores, raw_doc_ids):
+        run[qid] = {}
+        for s, rdid in zip(sc, rdoc_ids):
+            if rdid == -1:
+                log.warning(f"invalid doc ids!")
+                continue
+            run[qid][idx_to_docid[rdid]] = float(s)
 
-            eval_res[split] = evaluator.evaluate(run)
-            eval_res_agg[split] = utils.aggregate_pytrec(eval_res[split], "mean")
+    # return run
+    # for split, dataset in irds_splits.items():
+    #     log.info(f"running & evaluating {split}")
 
-            for metric, (mean, std) in eval_res_agg[split].items():
-                log.info(f"{metric:<12}: {mean:.4f} ({std:0.4f})")
+    #     run = encode.create_run_faiss(model=model,
+    #                                   dataset=dataset,
+    #                                   query_type=args.query, device=args.device,
+    #                                   eval_batch_size=args.encode_batch_size,
+    #                                   index=index, idx_to_docid=idx_to_docid,
+    #                                   docid_to_idx=docid_to_idx,
+    #                                   top_k=args.n_hits)
+    #     runs[split] = run
+
+    #     if dataset.has_qrels():
+    #         qrel, n_missing = utils.get_qrel(dataset, run)
+    #         split_qrels[split] = qrel
+    #         evaluator = pytrec_eval.RelevanceEvaluator(
+    #             qrel, metrics)
+
+    #         eval_res[split] = evaluator.evaluate(run)
+    #         eval_res_agg[split] = utils.aggregate_pytrec(eval_res[split], "mean")
+
+    #         for metric, (mean, std) in eval_res_agg[split].items():
+    #             log.info(f"{metric:<12}: {mean:.4f} ({std:0.4f})")
 
     utils.write_json({
         "aggregated_result": eval_res_agg,
