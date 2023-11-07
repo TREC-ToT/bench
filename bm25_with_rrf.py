@@ -12,7 +12,7 @@ from pyserini.trectools import TrecRun
 from pyserini.fusion import reciprocal_rank_fusion
 from ranx import Qrels, Run, evaluate
 
-from modules import sentence_decomposition
+from modules import llm_based_decomposition, sentence_decomposition
 import tot
 import ir_datasets
 from src import utils
@@ -26,6 +26,8 @@ def main():
     parser = argparse.ArgumentParser()
     # Path to indexes directory
     parser.add_argument("--index_name", default="bm25_0.8_1.0", help="name of index")
+
+    parser.add_argument("--decomposition_method", default="llm", help="how to decompose")
 
     parser.add_argument("--data_path", default="./data", help="location to dataset")
 
@@ -56,12 +58,17 @@ def main():
     
     irds_name = "trec-tot:" + args.split
     dataset = ir_datasets.load(irds_name)
-    queries_expanded = sentence_decomposition(dataset, f"{args.data_path}/decomposed_queries")
-
+    if args.decomposition_method == "llm":
+        queries_expanded = llm_based_decomposition(dataset, f"{args.data_path}/decomposed_queries")
+    else:
+        queries_expanded = sentence_decomposition(dataset, f"{args.data_path}/decomposed_queries")
 
     queries = json.load(open(queries_expanded))
 
     run_save_folder = f'{args.output_dir}BM25-RRF'
+    if args.decomposition_method == "llm":
+        run_save_folder += f'-llm'
+
     run_save_folder += f'-RM3-{args.run_number}' if args.rm3 == 'y' else f'-{args.run_number}'
 
     run_save_full = f"{run_save_folder}/{args.split}.run"

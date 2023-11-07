@@ -7,7 +7,8 @@ from torch import nn
 import argparse
 import os
 import logging
-
+from faiss import write_index, read_index
+import json
 import tot
 import bm25
 
@@ -69,7 +70,9 @@ if __name__ == '__main__':
                                   activation_function=nn.Tanh())
         model = SentenceTransformer(modules=[base_model, projection], device=args.device)
     else:
-        model = SentenceTransformer(args.model_or_checkpoint, device=args.device)
+        model = SentenceTransformer("/home/ddo/CMU/PLLM/llms-project/dense_models/baseline_distilbert_0/model", device="cuda")
+
+        # model = SentenceTransformer(args.model_or_checkpoint, device=args.device)
 
     irds_splits = {}
     st_data = {}
@@ -119,7 +122,9 @@ if __name__ == '__main__':
                                                                       dataset=irds_splits["train"],
                                                                       device=args.device,
                                                                       encode_batch_size=args.encode_batch_size)
-
+    write_index(index, "dense.index")
+    json.dump(idx_to_docid, open("idx_to_docid.json","w"))
+    json.dump(docid_to_idx, open("docid_to_idx.json","w"))
     runs = {}
     eval_res_agg = {}
     eval_res = {}

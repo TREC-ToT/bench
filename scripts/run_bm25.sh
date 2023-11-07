@@ -3,7 +3,7 @@
 # train can be used to generate negatives.
 
 split=$1
-data_path=./data
+data_path=/home/ddo/CMU/PLLM/TREC-TOT
 
 python bm25.py --index_name bm25_0.8_1.0 --index_path ./anserini_indicies \
                --data_path $data_path \

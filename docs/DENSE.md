@@ -41,7 +41,9 @@ recall_1000           	all	0.5333
 ndcg                  	all	0.1313
 
 # baseline run
-./trec_eval -m ndcg  -m recall.1,10,100,1000  -m recip_rank $DATA_PATH/dev/qrel.txt ./dense_models/baseline_distilbert/dev.run
+./trec_eval -m ndcg  -m recall.1,10,100,1000  -m recip_rank $DATA_PATH/dev/qrel.txt
+```
+./dense_models/baseline_distilbert/dev.run
 recip_rank            	all	0.0743
 recall_1              	all	0.0400
 recall_10             	all	0.1467
@@ -50,4 +52,15 @@ recall_1000           	all	0.6600
 ndcg                  	all	0.1627
 ```
 
-  
+Reproduced baselines
+
+recip_rank  : 0.0831 (0.2316)
+P_1         : 0.0533 (0.2247)
+recall_10   : 0.1333 (0.3399)
+recall_100  : 0.3400 (0.4737)
+recall_1000 : 0.6267 (0.4837)
+ndcg_cut_10 : 0.0878 (0.2481)
+ndcg_cut_100: 0.1307 (0.2476)
+ndcg_cut_1000: 0.1649 (0.2353)
+
+```
