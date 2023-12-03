@@ -10,7 +10,7 @@ from tenacity import retry, stop_after_attempt, wait_random_exponential
 # {<query_id>: {<decomposed_query_1>: text, ..., <decomposed_query_n>: text}, ...}
 
 GPT_MODEL = "gpt-4"
-openai.api_key = "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"
+openai.api_key = ""
 pattern = re.compile(r"\d\.\s(.*)")
 prompt = """
 Title: {}
