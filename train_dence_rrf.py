@@ -11,7 +11,9 @@ from faiss import write_index, read_index
 import json
 import tot
 import bm25
-
+import pyserini 
+import pyserini.encode 
+# pyserini.encode.set_classpath("/home/ddo/CMU/PLLM/llms-project/pyserini/pyserini-')
 log = logging.getLogger(__name__)
 
 if __name__ == '__main__':
@@ -71,6 +73,7 @@ if __name__ == '__main__':
         model = SentenceTransformer(modules=[base_model, projection], device=args.device)
     else:
         model = SentenceTransformer("/home/ddo/CMU/PLLM/llms-project/dense_models/baseline_distilbert/model", device="cuda")
+        # model = SentenceTransformer("/home/ddo/CMU/PLLM/llms-project/dense_models/baseline_distilbert_0/model", device="cuda")
 
         # model = SentenceTransformer(args.model_or_checkpoint, device=args.device)
 
@@ -123,23 +126,24 @@ if __name__ == '__main__':
     }
 
     # Tune the model
-    """model.fit(train_objectives=[(train_dataloader, train_loss)],
-              evaluation_steps=args.evaluation_steps,
-              output_path=os.path.join(model_dir, "model"),
-              evaluator=val_evaluator,
-              epochs=args.epochs,
-              warmup_steps=args.warmup_steps,
-              optimizer_params=optimizer_params,
-              weight_decay=args.weight_decay,
-              save_best_model=True)"""
+    # model.fit(train_objectives=[(train_dataloader, train_loss)],
+    #           evaluation_steps=args.evaluation_steps,
+    #           output_path=os.path.join(model_dir, "model"),
+    #           evaluator=val_evaluator,
+    #           epochs=args.epochs,
+    #           warmup_steps=args.warmup_steps,
+    #           optimizer_params=optimizer_params,
+    #           weight_decay=args.weight_decay,
+    #           save_best_model=True)
 
     log.info("encoding corpus with model")
     embed_size = args.embed_size
+    
     # index, (idx_to_docid, docid_to_idx) = encode.encode_dataset_faiss(model, embedding_size=embed_size,
     #                                                                   dataset=irds_splits["train"],
     #                                                                   device=args.device,
     #                                                                   encode_batch_size=args.encode_batch_size)
-    index = read_index( "dense.index")
+    # index = read_index( "dense.index")
     idx_to_docid = json.load(open("idx_to_docid.json","r"))
     docid_to_idx = json.load(open("docid_to_idx.json","r"))
     runs = {}
@@ -165,7 +169,7 @@ if __name__ == '__main__':
     #     qids.append(query.query_id)
     import torch
     eval_batch_size = 64
-    device = 'cpu'
+    device = 'cuda'
     # with torch.no_grad():
     #     query_embeddings = model.encode(queries, batch_size=eval_batch_size, show_progress_bar=True,
     #                                     convert_to_numpy=True, device=device)
@@ -182,29 +186,30 @@ if __name__ == '__main__':
     #         run[qid][idx_to_docid[rdid]] = float(s)
 
     # return run
-    # for split, dataset in irds_splits.items():
-    #     log.info(f"running & evaluating {split}")
 
-    #     run = encode.create_run_faiss(model=model,
-    #                                   dataset=dataset,
-    #                                   query_type=args.query, device=args.device,
-    #                                   eval_batch_size=args.encode_batch_size,
-    #                                   index=index, idx_to_docid=idx_to_docid,
-    #                                   docid_to_idx=docid_to_idx,
-    #                                   top_k=args.n_hits)
-    #     runs[split] = run
+    for split, dataset in irds_splits.items():
+        log.info(f"running & evaluating {split}")
 
-    #     if dataset.has_qrels():
-    #         qrel, n_missing = utils.get_qrel(dataset, run)
-    #         split_qrels[split] = qrel
-    #         evaluator = pytrec_eval.RelevanceEvaluator(
-    #             qrel, metrics)
+        run = encode.create_run_faiss(model=model,
+                                      dataset=dataset,
+                                      query_type=args.query, device=args.device,
+                                      eval_batch_size=args.encode_batch_size,
+                                      index=index, idx_to_docid=idx_to_docid,
+                                      docid_to_idx=docid_to_idx,
+                                      top_k=args.n_hits)
+        runs[split] = run
 
-    #         eval_res[split] = evaluator.evaluate(run)
-    #         eval_res_agg[split] = utils.aggregate_pytrec(eval_res[split], "mean")
+        if dataset.has_qrels():
+            qrel, n_missing = utils.get_qrel(dataset, run)
+            split_qrels[split] = qrel
+            evaluator = pytrec_eval.RelevanceEvaluator(
+                qrel, metrics)
 
-    #         for metric, (mean, std) in eval_res_agg[split].items():
-    #             log.info(f"{metric:<12}: {mean:.4f} ({std:0.4f})")
+            eval_res[split] = evaluator.evaluate(run)
+            eval_res_agg[split] = utils.aggregate_pytrec(eval_res[split], "mean")
+
+            for metric, (mean, std) in eval_res_agg[split].items():
+                log.info(f"{metric:<12}: {mean:.4f} ({std:0.4f})")
 
     utils.write_json({
         "aggregated_result": eval_res_agg,
