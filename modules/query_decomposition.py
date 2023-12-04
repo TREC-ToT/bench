@@ -1,14 +1,14 @@
 import openai
 import json
 import re
-
+import os
 
 # Implement multiple ways of decomposing queries
 # Each one should assume the input as the base query dictionary, and output a json with the format:
 # {<query_id>: {<decomposed_query_1>: text, ..., <decomposed_query_n>: text}, ...}
 
 GPT_MODEL = "gpt-4"
-openai.api_key = ""
+openai.api_key = os.environ["OPENAI_API_KEY"]
 pattern = re.compile(r"\d\.\s(.*)")
 prompt = """
 Original Query: {}

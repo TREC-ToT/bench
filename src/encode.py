@@ -7,9 +7,13 @@ import ir_datasets
 
 from src import data, utils
 import logging
-
+import pyserini
 log = logging.getLogger(__name__)
 
+def encode_pyserini(model: SentenceTransformer, embedding_size: int, dataset: ir_datasets.Dataset, device,
+                    encode_batch_size):
+    doc_ids, documents = data.get_documents(dataset)
+    
 
 def encode_dataset_faiss(model: SentenceTransformer, embedding_size: int, dataset: ir_datasets.Dataset, device,
                          encode_batch_size):

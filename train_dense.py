@@ -188,6 +188,7 @@ if __name__ == '__main__':
         for split, run in runs.items():
             if split == "test":
                 continue
+            os.makedirs(args.negatives_out, exist_ok=True)
             negatives_path = os.path.join(args.negatives_out, f"{split}-{args.query}-negatives.json")
             qrel = split_qrels[split]
             for qid, hits in run.items():

@@ -28,7 +28,7 @@ def main():
     # parser.add_argument("--index_name", default="dense.index", help="name of index")
     parser.add_argument("--index_name", default="bm25_0.8_1.0", help="name of index")
 
-    parser.add_argument("--decomposition_method", default="notllm", help="how to decompose")
+    parser.add_argument("--decomposition_method", default="llm", help="how to decompose")
 
     parser.add_argument("--data_path", default="/home/ddo/CMU/PLLM/TREC-TOT", help="location to dataset")
 
@@ -45,7 +45,7 @@ def main():
     # BM25 parameters
     parser.add_argument('--K', type=int, help='retrieve top K documents', default=1000)
 
-    # Binary flags to enable or disable ranking methodss
+    # Binary flags to enable or disable ranking methods
     parser.add_argument('--rm3', type=str, help='enable or disable rm3', choices=['y', 'n'], default='n')
     
     # Run number
@@ -57,19 +57,21 @@ def main():
     args = parser.parse_args()
 
     tot.register(args.data_path)
+    args.split = 'train'
     
     irds_name = "trec-tot:" + args.split
     dataset = ir_datasets.load(irds_name)
+    args.load_queries = 'y'
     if args.decomposition_method == "llm":
         if args.load_queries == 'n':
-            queries_expanded = llm_based_decomposition(dataset, f"{args.data_path}/decomposed_queries")
+            queries_expanded = llm_based_decomposition(dataset, f"{args.data_path}/decomposed_queries/{args.split}")
         else:
-            queries_expanded = f"{args.data_path}/decomposed_queries/llm_decomposed_queries.json"
+            queries_expanded = f"{args.data_path}/decomposed_queries/{args.split}/llm_decomposed_queries.json"
     else:
         if args.load_queries == 'n':
-            queries_expanded = sentence_decomposition(dataset, f"{args.data_path}/decomposed_queries")
+            queries_expanded = sentence_decomposition(dataset, f"{args.data_path}/decomposed_queries/{args.split}")
         else: 
-            queries_expanded = f"{args.data_path}/decomposed_queries/sentence_decomposed_queries.json"
+            queries_expanded = f"{args.data_path}/decomposed_queries/{args.split}/sentence_decomposed_queries.json"
     
     queries = json.load(open(queries_expanded))
 

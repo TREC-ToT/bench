@@ -1,3 +1,8 @@
+dense_index_*
+output_dense_*
+runs_dense/*
+scripts/runs_dense/*
+runs
 .idea
 .python-version
 anserini_docs

@@ -11,7 +11,7 @@ from pyserini.search.lucene import LuceneSearcher
 from pyserini.trectools import TrecRun
 from pyserini.fusion import reciprocal_rank_fusion
 from ranx import Qrels, Run, evaluate
-
+from pyserini.encode import DocumentEncoder
 from modules import llm_based_decomposition, sentence_decomposition
 import tot
 import ir_datasets
