@@ -1,5 +1,7 @@
 # Benchmarks for TREC-ToT (2023)
 
+NOTE: code is activelly being re-organized!
+
 The following benchmarks (& runs) are available:
 
 
