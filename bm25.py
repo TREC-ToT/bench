@@ -18,7 +18,7 @@ import tot
 
 log = logging.getLogger(__name__)
 
-METRICS = "recall_10,recall_100,recall_1000,ndcg_cut_10,ndcg_cut_100,ndcg_cut_1000,recip_rank"
+METRICS = "P_1,recall_10,recall_100,recall_1000,ndcg_cut_10,ndcg_cut_100,ndcg_cut_1000,recip_rank"
 
 
 def create_index(dataset, field_to_index, dest_folder, index):

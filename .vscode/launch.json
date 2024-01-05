@@ -1,0 +1,29 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            // "args": [   "input","--corpus","/home/ddo/CMU/PLLM/TREC-TOT/corpus.jsonl","--fields","text" ,
+            // // "--delimiter","\\n", 
+            // "--shard-id","0" ,
+            // "--shard-num","1" ,
+            // "output","--embeddings","../output_dense_enc_1" ,
+            // "--to-faiss" ,
+            // "encoder","--encoder","/home/ddo/CMU/PLLM/llms-project/dense_models/baseline_distilbert/model" ,
+            // "--fields","text", 
+            // "--batch", "32" ]
+            // "args": []
+            "args": ["--epochs","20","--lr","6e-05","--weight_decay","0.01","--model_dir","dense_models/baseline_distilbert_0","--run_id","baseline_distilbert_0","--model_or_checkpoint","distilbert-base-uncased","--embed_size","768","--batch_size","10","--encode_batch_size","128","--data_path","/home/ddo/CMU/PLLM/TREC-TOT","--negatives_path","/home/ddo/CMU/PLLM/TREC-TOT/negatives/bm25_negatives","--negatives_out","/home/ddo/CMU/PLLM/TREC-TOT/negatives/baseline_distilbert_0_negatives","--query","title_text","--device","cuda"]
+            // "args": ["--epochs","20","--lr","6e-05","--weight_decay","0.01","--model_dir","dense_models/baseline_distilbert_0","--run_id","baseline_distilbert_0","--model_or_checkpoint","distilbert-base-uncased","--embed_size","768","--batch_size","10","--encode_batch_size","128","--data_path","/home/ddo/CMU/PLLM/TREC-TOT","--negatives_path","/home/ddo/CMU/PLLM/TREC-TOT/negatives/bm25_negatives","--negatives_out","/home/ddo/CMU/PLLM/TREC-TOT/negatives/baseline_distilbert_0_negatives","--query","title_text","--device","cuda"]
+            // "args": ["--epochs","20","--lr","6e-05","--weight_decay","0.01","--model_dir","dense_models/baseline_distilbert_0","--run_id","baseline_distilbert_0","--model_or_checkpoint","distilbert-base-uncased","--embed_size","768","--batch_size","10","--encode_batch_size","128","--data_path","/home/ddo/CMU/PLLM/TREC-TOT","--negatives_path","/home/ddo/CMU/PLLM/TREC-TOT/negatives/bm25_negatives","--negatives_out","/home/ddo/CMU/PLLM/TREC-TOT/negatives/baseline_distilbert_0_negatives","--query","title_text","--device","cuda"]
+        }
+    ]
+}
