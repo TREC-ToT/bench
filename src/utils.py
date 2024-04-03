@@ -12,6 +12,16 @@ from typing import Dict, Any
 log = logging.getLogger(__name__)
 
 
+def read_jsonl(file):
+    with open(file) as reader:
+        jj = []
+        for line in reader:
+            j = json.loads(line)
+            jj.append(j)
+
+        return jj
+
+
 def read_json(path, zipped=False):
     if zipped:
         with gzip.open(path, 'rt', encoding="ascii") as zipfile:

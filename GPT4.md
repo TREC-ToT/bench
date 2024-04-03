@@ -36,3 +36,31 @@ recall_100            	all	0.3200
 recall_1000           	all	0.3200
 ndcg                  	all	0.2407
 ```
+
+
+### Converting LLM output to a run
+
+- ```pip install qwikidata```
+- Create a JSONL file that matches the output in ./llm_example_runs/ex_out.jsonl
+- Run: 
+```
+python gpt_post.py \
+    --input llm_example_runs/ex_out.jsonl \
+    --split train \
+    --data_path ../trec-tot/datasets/TREC-TOT/public/ \
+    --index_name llm_title \
+    --run llm_example_runs/ex_out.run \  
+    --run_id llm_example 
+```
+- **Recommended: ** run with aliases gathered from Wikidata (this takes a while)
+```
+python gpt_post.py \
+    --input llm_example_runs/ex_out.jsonl \
+    --split train \
+    --data_path ../trec-tot/datasets/TREC-TOT/public/ \
+    --index_name llm_title \
+    --run llm_example_runs/ex_out.run \  
+    --run_id llm_example \ 
+    --gather_wikidata_aliases \
+    --wikidata_cache ./wikidata_cache/ 
+```
