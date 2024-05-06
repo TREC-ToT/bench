@@ -60,7 +60,7 @@ if __name__ == '__main__':
     parser.add_argument("--n_train_negatives", default=30, type=int,
                         help="number of negatives to use during training")
     parser.add_argument("--n_negatives", default=30, type=int, help="number of negatives to obtain")
-
+    parser.add_argument("--encode_after_train", action="store_true", default=False, help="encode & run after training ")
     logging.basicConfig(level=logging.INFO)
 
     args = parser.parse_args()
@@ -171,85 +171,85 @@ if __name__ == '__main__':
               weight_decay=args.weight_decay,
               save_best_model=True)
 
-    log.info("encoding corpus with model")
-    embed_size = args.embed_size
-    index, (idx_to_docid, docid_to_idx) = encode.encode_dataset_faiss(model, embedding_size=embed_size,
-                                                                      dataset=irds_splits["train-2024"],
-                                                                      device=args.device,
-                                                                      encode_batch_size=args.encode_batch_size)
+    if args.encode_after_train:
+        run_id = args.run_id
+        assert run_id is not None
+        try:
+            log.info("attempting to load test set")
+            # plug in the test set
+            irds_splits["test"] = ir_datasets.load(f"trec-tot:test-2024")
+            log.info("success!")
+        except KeyError:
+            log.info("couldn't find test set!")
+        log.info("encoding corpus with model")
+        embed_size = args.embed_size
+        index, (idx_to_docid, docid_to_idx) = encode.encode_dataset_faiss(model, embedding_size=embed_size,
+                                                                          dataset=irds_splits["train-2024"],
+                                                                          device=args.device,
+                                                                          encode_batch_size=args.encode_batch_size)
 
-    runs = {}
-    eval_res_agg = {}
-    eval_res = {}
+        runs = {}
+        eval_res_agg = {}
+        eval_res = {}
+        split_qrels = {}
+        for split, dataset in irds_splits.items():
+            log.info(f"running & evaluating {split}")
 
-    try:
-        log.info("attempting to load test set")
-        # plug in the test set
-        irds_splits["test"] = ir_datasets.load(f"trec-tot:test-2024")
-        log.info("success!")
-    except KeyError:
-        log.info("couldn't find test set!")
+            run = encode.create_run_faiss(model=model,
+                                          dataset=dataset,
+                                          query_type=args.query, device=args.device,
+                                          eval_batch_size=args.encode_batch_size,
+                                          index=index, idx_to_docid=idx_to_docid,
+                                          docid_to_idx=docid_to_idx,
+                                          top_k=args.n_hits)
+            runs[split] = run
 
-    split_qrels = {}
-    for split, dataset in irds_splits.items():
-        log.info(f"running & evaluating {split}")
+            if dataset.has_qrels():
+                qrel, n_missing = utils.get_qrel(dataset, run)
+                split_qrels[split] = qrel
+                evaluator = pytrec_eval.RelevanceEvaluator(
+                    qrel, metrics)
 
-        run = encode.create_run_faiss(model=model,
-                                      dataset=dataset,
-                                      query_type=args.query, device=args.device,
-                                      eval_batch_size=args.encode_batch_size,
-                                      index=index, idx_to_docid=idx_to_docid,
-                                      docid_to_idx=docid_to_idx,
-                                      top_k=args.n_hits)
-        runs[split] = run
+                eval_res[split] = evaluator.evaluate(run)
+                eval_res_agg[split] = utils.aggregate_pytrec(eval_res[split], "mean")
 
-        if dataset.has_qrels():
-            qrel, n_missing = utils.get_qrel(dataset, run)
-            split_qrels[split] = qrel
-            evaluator = pytrec_eval.RelevanceEvaluator(
-                qrel, metrics)
+                for metric, (mean, std) in eval_res_agg[split].items():
+                    log.info(f"{metric:<12}: {mean:.4f} ({std:0.4f})")
 
-            eval_res[split] = evaluator.evaluate(run)
-            eval_res_agg[split] = utils.aggregate_pytrec(eval_res[split], "mean")
-
-            for metric, (mean, std) in eval_res_agg[split].items():
-                log.info(f"{metric:<12}: {mean:.4f} ({std:0.4f})")
-
-    utils.write_json({
-        "aggregated_result": eval_res_agg,
-        "run": runs,
-        "result": eval_res,
-        "args": vars(args)
-    }, os.path.join(model_dir, "out.gz"), zipped=True)
-
-    run_id = args.run_id
-    assert run_id is not None
-
-    for split, run in runs.items():
-        run_path = os.path.join(model_dir, f"{split}.run")
-        with open(run_path, "w") as writer:
-            for qid, r in run.items():
-                for rank, (doc_id, score) in enumerate(sorted(r.items(), key=lambda _: -_[1])):
-                    writer.write(f"{qid}\tQ0\t{doc_id}\t{rank}\t{score}\t{run_id}\n")
-
-    if args.negatives_out:
-        log.info(f"writing negatives to folder: {args.negatives_out}")
-        os.makedirs(args.negatives_out, exist_ok=True)
-        out = {}
+        utils.write_json({
+            "aggregated_result": eval_res_agg,
+            "run": runs,
+            "result": eval_res,
+            "args": vars(args)
+        }, os.path.join(model_dir, "out.gz"), zipped=True)
 
         for split, run in runs.items():
-            if split == "test-2024":
-                continue
-            negatives_path = os.path.join(args.negatives_out, f"{split}-{args.query}-negatives.json")
-            qrel = split_qrels[split]
-            for qid, hits in run.items():
-                hits = sorted(hits.items(), key=lambda _: -_[1])
-                negs = []
-                for (doc, score) in hits:
-                    if qrel[qid].get(doc, 0) > 0:
-                        continue
-                    if len(negs) == args.n_negatives:
-                        break
-                    negs.append(doc)
-                out[qid] = negs
-            utils.write_json(out, negatives_path)
+            run_path = os.path.join(model_dir, f"{split}.run")
+            with open(run_path, "w") as writer:
+                for qid, r in run.items():
+                    for rank, (doc_id, score) in enumerate(sorted(r.items(), key=lambda _: -_[1])):
+                        writer.write(f"{qid}\tQ0\t{doc_id}\t{rank}\t{score}\t{run_id}\n")
+
+        if args.negatives_out:
+            log.info(f"writing negatives to folder: {args.negatives_out}")
+            os.makedirs(args.negatives_out, exist_ok=True)
+            out = {}
+
+            for split, run in runs.items():
+                if split == "test-2024":
+                    continue
+                negatives_path = os.path.join(args.negatives_out, f"{split}-negatives.json")
+                qrel = split_qrels[split]
+                for qid, hits in run.items():
+                    hits = sorted(hits.items(), key=lambda _: -_[1])
+                    negs = []
+                    for (doc, score) in hits:
+                        if qrel[qid].get(doc, 0) > 0:
+                            continue
+                        if len(negs) == args.n_negatives:
+                            break
+                        negs.append(doc)
+                    out[qid] = negs
+                utils.write_json(out, negatives_path)
+    else:
+        log.info("encode_after_train not set. complete!")
