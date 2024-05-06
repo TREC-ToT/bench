@@ -1,33 +1,43 @@
-import ir_datasets
-from torch.utils.data import DataLoader
-from sentence_transformers import SentenceTransformer, losses, models
-from src import data, encode, utils
-import pytrec_eval
-from torch import nn
 import argparse
-import os
 import logging
+import os
 
-import tot
+import ir_datasets
+import pytrec_eval
+from sentence_transformers import SentenceTransformer, losses, models
+from sentence_transformers.losses import TripletDistanceMetric, SiameseDistanceMetric
+from torch import nn
+from torch.utils.data import DataLoader
+
 import bm25
+import tot
+from src import data, encode, utils
 
 log = logging.getLogger(__name__)
+
+OUT_TYPES = {
+    "mnrl": "triplet",
+    "triplet": "triplet",
+    "contrastive": "contrastive",
+    "online_contrastive": "contrastive"
+}
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser("train_dense", description="Trains a dense retrieval model")
 
-    parser.add_argument("--data_path", default="./datasets/TREC-TOT", help="location to dataset")
+    parser.add_argument("--data_path", default="./datasets/TREC-ToT2024/", help="location to dataset")
 
     parser.add_argument("--negatives_path", default="./bm25_negatives",
                         help="path to folder containing negatives ")
-
-    parser.add_argument("--query", choices=["title", "text", "title_text"], default="title_text")
 
     parser.add_argument("--model_or_checkpoint", type=str, required=True, help="hf checkpoint/ path to pt-model")
     parser.add_argument("--embed_size", required=True, type=int, help="hidden size of the model")
 
     parser.add_argument("--epochs", type=int, required=True, help="number of epochs to train")
+    parser.add_argument("--loss_fn", type=str, required=True, help="loss function")
+    parser.add_argument("--loss_distance", type=str, default=None, help="distance function for loss [only some losses]")
+    parser.add_argument("--loss_margin", type=str, default=None, help="margin for loss [only some losses]")
     parser.add_argument("--lr", type=float, default=2e-5, help="learning rate")
     parser.add_argument("--weight_decay", type=float, default=0.01, help="weight decay")
     parser.add_argument("--warmup_steps", type=int, default=0, help="warmup steps")
@@ -47,7 +57,9 @@ if __name__ == '__main__':
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--negatives_out", default=None,
                         help="if provided, dumps negatives for use in training other models")
-    parser.add_argument("--n_negatives", default=10, type=int, help="number of negatives to obtain")
+    parser.add_argument("--n_train_negatives", default=30, type=int,
+                        help="number of negatives to use during training")
+    parser.add_argument("--n_negatives", default=30, type=int, help="number of negatives to obtain")
 
     logging.basicConfig(level=logging.INFO)
 
@@ -71,29 +83,75 @@ if __name__ == '__main__':
     else:
         model = SentenceTransformer(args.model_or_checkpoint, device=args.device)
 
+    # load the negatives
+    negatives = {}
+    for split in {"train-2024", "dev1-2024", "dev2-2024"}:
+        neg_name = split.split("-")[0]
+        negatives[split] = utils.read_json(os.path.join(args.negatives_path, f"{neg_name}-negatives.json"))
+
+    out_type = OUT_TYPES[args.loss_fn]
+    log.info(f"output type for datasets: {out_type}, loss={args.loss_fn}")
     irds_splits = {}
     st_data = {}
-
     # splits
-    for split in {"train", "dev"}:
+    for split in {"train-2024", "dev1-2024", "dev2-2024"}:
         irds_splits[split] = ir_datasets.load(f"trec-tot:{split}")
-
         log.info(f"loaded split {split}")
-        st_data[split] = data.SBERTDataset(irds_splits[split], query_type=args.query,
-                                           negatives=utils.read_json(
-                                               os.path.join(args.negatives_path,
-                                                            f"{split}-{args.query}-negatives.json")))
+        st_data[split] = data.SBERTDataset(irds_splits[split],
+                                           negatives=negatives[split],
+                                           out_type=out_type,
+                                           n_negatives=args.n_train_negatives)
 
-    log.info(f"training model for {args.epochs} epochs")
-    train_dataloader = DataLoader(st_data["train"], shuffle=True, batch_size=args.batch_size)
+    # create a new dataset with train + dev1
+    train_data = data.SBERTDatasets(
+        [irds_splits["train-2024"], irds_splits["dev1-2024"]],
+        [negatives["train-2024"], negatives["dev1-2024"]],
+        out_type=out_type,
+        n_negatives=args.n_train_negatives
+    )
+
+    log.info(f"training model for {args.epochs} epochs [train_len={len(train_data)}]")
+    train_dataloader = DataLoader(train_data,
+                                  shuffle=True,
+                                  batch_size=args.batch_size)
 
     args.loss_fn = "mnrl"
     if args.loss_fn == "mnrl":
         train_loss = losses.MultipleNegativesRankingLoss(model=model)
+    elif args.loss_fn == "triplet":
+        assert args.loss_margin is not None
+        loss_distances = {
+            "cosine": TripletDistanceMetric.COSINE,
+            "euclidean": TripletDistanceMetric.EUCLIDEAN
+        }
+        assert args.loss_distance is not None and args.loss_distance in loss_distances
+        train_loss = losses.TripletLoss(model=model,
+                                        distance_metric=args.loss_distance,
+                                        triplet_margin=args.loss_margin)
+    elif args.loss_fn == "contrastive":
+        assert args.loss_margin is not None
+        loss_distances = {
+            "cosine": SiameseDistanceMetric.COSINE,
+            "euclidean": SiameseDistanceMetric.EUCLIDEAN
+        }
+        assert args.loss_distance is not None and args.loss_distance in loss_distances
+        train_loss = losses.ContrastiveLoss(model=model,
+                                            distance_metric=args.loss_distance,
+                                            margin=args.loss_margin)
+    elif args.loss_fn == "online_contrastive":
+        assert args.loss_margin is not None
+        loss_distances = {
+            "cosine": SiameseDistanceMetric.COSINE,
+            "euclidean": SiameseDistanceMetric.EUCLIDEAN
+        }
+        assert args.loss_distance is not None and args.loss_distance in loss_distances
+        train_loss = losses.OnlineContrastiveLoss(model=model,
+                                                  distance_metric=args.loss_distance,
+                                                  margin=args.loss_margin)
     else:
         raise NotImplementedError(args.loss_fn)
 
-    val_evaluator = data.get_ir_evaluator(st_data["dev"], name=f"dev",
+    val_evaluator = data.get_ir_evaluator(st_data["dev2-2024"], name=f"dev2",
                                           mrr_at_k=[1000],
                                           ndcg_at_k=[10, 1000],
                                           corpus_chunk_size=args.encode_batch_size)
@@ -116,7 +174,7 @@ if __name__ == '__main__':
     log.info("encoding corpus with model")
     embed_size = args.embed_size
     index, (idx_to_docid, docid_to_idx) = encode.encode_dataset_faiss(model, embedding_size=embed_size,
-                                                                      dataset=irds_splits["train"],
+                                                                      dataset=irds_splits["train-2024"],
                                                                       device=args.device,
                                                                       encode_batch_size=args.encode_batch_size)
 
@@ -127,11 +185,10 @@ if __name__ == '__main__':
     try:
         log.info("attempting to load test set")
         # plug in the test set
-        irds_splits["test"] = ir_datasets.load(f"trec-tot:test")
+        irds_splits["test"] = ir_datasets.load(f"trec-tot:test-2024")
         log.info("success!")
     except KeyError:
         log.info("couldn't find test set!")
-        pass
 
     split_qrels = {}
     for split, dataset in irds_splits.items():
@@ -181,7 +238,7 @@ if __name__ == '__main__':
         out = {}
 
         for split, run in runs.items():
-            if split == "test":
+            if split == "test-2024":
                 continue
             negatives_path = os.path.join(args.negatives_out, f"{split}-{args.query}-negatives.json")
             qrel = split_qrels[split]

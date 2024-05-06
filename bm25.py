@@ -1,31 +1,28 @@
-import os
+import argparse
 import json
 import logging
-import argparse
+import os
+import shutil
 import subprocess
-
-from typing import Dict, Any
-from collections import defaultdict
+from pathlib import Path
 
 import ir_datasets
 import pytrec_eval
-import numpy as np
-from tqdm import tqdm
 from pyserini.search.lucene import LuceneSearcher
+from tqdm import tqdm
 
-from src import utils
 import tot
+from src import utils
 
 log = logging.getLogger(__name__)
 
-METRICS = "recall_10,recall_100,recall_1000,ndcg_cut_10,ndcg_cut_100,ndcg_cut_1000,recip_rank"
+METRICS = "recall_10,recall_1000,ndcg_cut_10,ndcg_cut_1000,recip_rank"
 
 
 def create_index(dataset, field_to_index, dest_folder, index):
     log.info(f"creating files for indexing in {dest_folder}")
     docs_folder = os.path.join(dest_folder, "docs")
     os.makedirs(docs_folder, exist_ok=True)
-
     with open(os.path.join(docs_folder, "docs.jsonl"), "w") as writer:
         for raw_doc in dataset.docs_iter():
             doc = {
@@ -48,6 +45,9 @@ def create_index(dataset, field_to_index, dest_folder, index):
     except subprocess.CalledProcessError as e:
         log.exception("Exception occurred during indexing!")
         raise ValueError(e)
+    finally:
+        log.info(f"removing temp folder: {docs_folder}")
+        shutil.rmtree(docs_folder)
 
 
 def create_run(index, queries, param_k1, param_b, batch_size, n_hits, n_threads):
@@ -69,10 +69,9 @@ def create_run(index, queries, param_k1, param_b, batch_size, n_hits, n_threads)
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("BM25 Run")
     parser.add_argument("--data_path", required=True, help="location to dataset")
-    parser.add_argument("--split", required=True, choices={"train", "dev", "test"}, help="split to run")
+    parser.add_argument("--splits", required=True, help="csv of splits to run")
     parser.add_argument("--field", required=True, help="field to index from documents")
     parser.add_argument("--index_name", required=True, help="name of index")
-    parser.add_argument("--query", choices=["title", "text", "title_text"], required=True)
 
     parser.add_argument("--param_k1", default=0.8, type=float, help="param: k1 for BM25")
     parser.add_argument("--param_b", default=1.0, type=float, help="param: b for BM25")
@@ -88,20 +87,22 @@ if __name__ == '__main__':
     parser.add_argument("--index_path", default="./anserini_indices", help="path to store (all) indices")
     parser.add_argument("--n_hits", default=1000, type=int, help="number of hits to retrieve")
     parser.add_argument("--n_threads", default=8, type=int, help="number of threads (eval)")
-    parser.add_argument("--batch_size", default=16, type=int, help="batch size (eval) ")
+    parser.add_argument("--batch_size", default=8, type=int, help="batch size (eval) ")
     parser.add_argument("--negatives_out", default=None,
                         help="if provided, dumps negatives for use in training other models")
-    parser.add_argument("--n_negatives", default=10, type=int,
+    parser.add_argument("--n_negatives", default=30, type=int,
                         help="number of negatives to obtain")
 
     logging.basicConfig(level=logging.INFO)
 
     args = parser.parse_args()
     tot.register(args.data_path)
-    split = args.split
-
-    irds_name = "trec-tot:" + split
-    dataset = ir_datasets.load(irds_name)
+    datasets = []
+    for split in args.splits.split(","):
+        irds_name = "trec-tot:" + split
+        dataset = ir_datasets.load(irds_name)
+        datasets.append(dataset)
+        log.info(f"loading split: {split}[irds_name={irds_name}]:\t{dataset}")
 
     metrics = args.metrics.split(",")
 
@@ -113,43 +114,51 @@ if __name__ == '__main__':
         log.warning(f"Index {index} already exists!")
     else:
         log.info("Creating index!")
-        create_index(dataset=dataset,
+        create_index(dataset=datasets[0],
                      field_to_index=args.field,
                      dest_folder=docs_path,
                      index=index)
 
     log.info(f"BM25 config: k1={args.param_k1}; b={args.param_b}")
 
-    queries, n_empty = utils.create_queries(dataset, query_type=args.query)
+    full_run = {}
+    qrels = {}
+    eval_run = True
+    for dataset in datasets:
+        log.info(f"running BM25 for {dataset}")
+        queries, n_empty = utils.create_queries(dataset)
 
-    log.info(f"Gathered {len(queries)} queries")
-    if n_empty > 0:
-        log.warning(f"Number of empty queries: {n_empty}")
+        log.info(f"Gathered {len(queries)} queries")
+        if n_empty > 0:
+            log.warning(f"Number of empty queries: {n_empty}")
 
-    run = create_run(index=index, queries=queries, param_b=args.param_b,
-                     param_k1=args.param_k1, batch_size=args.batch_size,
-                     n_hits=args.n_hits, n_threads=args.n_threads)
+        run = create_run(index=index, queries=queries, param_b=args.param_b,
+                         param_k1=args.param_k1, batch_size=args.batch_size,
+                         n_hits=args.n_hits, n_threads=args.n_threads)
+        assert all(qid not in full_run for qid in run)
+        full_run.update(run)
+        if dataset.has_qrels():
+            qrel, n_missing = utils.get_qrel(dataset, run)
+            if n_missing > 0:
+                raise ValueError(f"Number of missing qids in run: {n_missing}")
+            assert all(qid not in qrels for qid in qrel)
+            qrels.update(qrel)
+        else:
+            log.info("dataset does not have qrels. evaluation not performed!")
+            eval_run = False
 
-    if dataset.has_qrels():
-        qrel, n_missing = utils.get_qrel(dataset, run)
-        if n_missing > 0:
-            raise ValueError(f"Number of missing qids in run: {n_missing}")
+    log.info(f"eval_run: {eval_run}")
 
+    if eval_run:
         evaluator = pytrec_eval.RelevanceEvaluator(
-            qrel, metrics)
-
-        eval_res = evaluator.evaluate(run)
-
+            qrels, metrics)
+        eval_res = evaluator.evaluate(full_run)
         eval_res_agg = utils.aggregate_pytrec(eval_res, "mean")
-
         for metric, (mean, std) in eval_res_agg.items():
             log.info(f"{metric:<12}: {mean:.4f} ({std:0.4f})")
-
     else:
-        log.info("dataset does not have qrels. evaluation not performed!")
         eval_res_agg = None
         eval_res = None
-        qrel = None
 
     if args.run is not None:
         run_format = args.run_format
@@ -159,25 +168,28 @@ if __name__ == '__main__':
         if run_format == "json":
             utils.write_json({
                 "aggregated_result": eval_res_agg,
-                "run": run,
+                "run": full_run,
                 "result": eval_res,
                 "args": vars(args)
             }, args.run, zipped=args.run.endswith(".gz"))
         else:
             run_id = args.run_id
             assert run_id is not None
+            os.makedirs(Path(args.run).parent, exist_ok=True)
             with open(args.run, "w") as writer:
-                for qid, r in run.items():
+                for qid, r in full_run.items():
                     for rank, (doc_id, score) in enumerate(sorted(r.items(), key=lambda _: -_[1])):
                         writer.write(f"{qid}\tQ0\t{doc_id}\t{rank}\t{score}\t{run_id}\n")
 
         if args.negatives_out:
+            # QRELs required, to avoid writing positives
+            assert eval_run
             out = {}
-            for qid, hits in run.items():
+            for qid, hits in full_run.items():
                 hits = sorted(hits.items(), key=lambda _: -_[1])
                 negs = []
                 for (doc, score) in hits:
-                    if qrel[qid].get(doc, 0) > 0:
+                    if qrels[qid].get(doc, 0) > 0:
                         continue
                     if len(negs) == args.n_negatives:
                         break
@@ -185,4 +197,5 @@ if __name__ == '__main__':
 
                 out[qid] = negs
 
+            os.makedirs(Path(args.negatives_out).parent, exist_ok=True)
             utils.write_json(out, args.negatives_out)

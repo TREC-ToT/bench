@@ -12,6 +12,11 @@ The following benchmarks (& runs) are available:
 *: GPT-4 generates 20 candidates at most. See [GPT4](GPT4.md) for more details.
 
 
+**Note**: The current repository only supports the 2024 version of the corpus/queries. 
+For using the 2023 version, please use `tot23.py` instead, and change the `ir_dataset` names
+used by baselines inside the code.  
+ 
+
 ## Initial setup 
 
 ```
@@ -20,6 +25,34 @@ The following benchmarks (& runs) are available:
 # install requirements 
 pip install ir_datasets sentence-transformers==2.2.2 pyserini==0.20.0 pytrec_eval faiss-cpu==1.6.5
 ``` 
+
+### 2024
+After downloading the files (see guidelines), set DATA_PATH to the folder which 
+contains the uncompressed files s.t:
+
+```
+DATA_PATH/
+  | train-2024
+  | | - queries.jsonl
+  | |  - qrel.txt
+  | dev1-2024
+  | | - queries.jsonl
+  | | - qrel.txt
+  | dev2-2024
+  | | - queries.jsonl
+  | | - qrel.txt
+  | corpus.jsonl
+```
+
+Quick test to see if data is setup properly:
+```
+python tot.py
+```
+The command above should print the correct number of train/dev queries and the number of documents 
+in the corpus, along with example queries and documents.
+
+### 2023 
+
 
 After downloading the files (see guidelines), set DATA_PATH to the folder which 
 contains the uncompressed files s.t:
