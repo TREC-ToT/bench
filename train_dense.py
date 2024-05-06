@@ -61,7 +61,8 @@ if __name__ == '__main__':
                         help="number of negatives to use during training")
     parser.add_argument("--n_negatives", default=30, type=int, help="number of negatives to obtain")
     parser.add_argument("--encode_after_train", action="store_true", default=False, help="encode & run after training ")
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO,
+                        format='[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s')
 
     args = parser.parse_args()
     utils.set_seed(args.seed)
