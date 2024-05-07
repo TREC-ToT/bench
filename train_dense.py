@@ -61,6 +61,7 @@ if __name__ == '__main__':
                         help="number of negatives to use during training")
     parser.add_argument("--n_negatives", default=30, type=int, help="number of negatives to obtain")
     parser.add_argument("--encode_after_train", action="store_true", default=False, help="encode & run after training ")
+    parser.add_argument("--encode_norm", action="store_true", default=False, help="normalize embeds")
     logging.basicConfig(level=logging.INFO,
                         format='[%(asctime)s] %(levelname)s - %(message)s')
 
@@ -187,7 +188,8 @@ if __name__ == '__main__':
         index, (idx_to_docid, docid_to_idx) = encode.encode_dataset_faiss(model, embedding_size=embed_size,
                                                                           dataset=irds_splits["train-2024"],
                                                                           device=args.device,
-                                                                          encode_batch_size=args.encode_batch_size)
+                                                                          encode_batch_size=args.encode_batch_size,
+                                                                          normalize_embeddings=args.encode_norm)
 
         runs = {}
         eval_res_agg = {}
@@ -198,7 +200,7 @@ if __name__ == '__main__':
 
             run = encode.create_run_faiss(model=model,
                                           dataset=dataset,
-                                          query_type=args.query, device=args.device,
+                                          device=args.device,
                                           eval_batch_size=args.encode_batch_size,
                                           index=index, idx_to_docid=idx_to_docid,
                                           docid_to_idx=docid_to_idx,
@@ -237,7 +239,7 @@ if __name__ == '__main__':
             out = {}
 
             for split, run in runs.items():
-                if split == "test-2024":
+                if "test" in split:
                     continue
                 negatives_path = os.path.join(args.negatives_out, f"{split}-negatives.json")
                 qrel = split_qrels[split]

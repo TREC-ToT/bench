@@ -11,6 +11,8 @@ NAME = "trec-tot"
 
 log = logging.getLogger(__name__)
 
+N_DOCS = 3185450
+
 
 class TrecToTDoc(NamedTuple):
     title: str
@@ -56,7 +58,7 @@ class TrecToTDocs(BaseDocs):
             data_cls=self.docs_cls(),
             lookup_field=field,
             index_fields=[field],
-            count_hint=3185450
+            count_hint=N_DOCS
         )
 
     def docs_count(self):
