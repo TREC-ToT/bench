@@ -1,33 +1,30 @@
 import json
-from typing import NamedTuple, Dict, List
+import logging
 from pathlib import Path
+from typing import NamedTuple, Dict, List
+
 import ir_datasets
 from ir_datasets.formats import TrecQrels, BaseDocs, BaseQueries
 from ir_datasets.indices import PickleLz4FullStore
-import logging
 
 NAME = "trec-tot"
 
 log = logging.getLogger(__name__)
 
+N_DOCS = 3185450
+
 
 class TrecToTDoc(NamedTuple):
-    page_title: str
+    title: str
     doc_id: int
-    page_source: str
     wikidata_id: str
     text: str
-    sections: Dict[str, str]
-    infoboxes: List[Dict[str, str]]
-    wikidata_classes: List[List[str]]
+    sections: List[Dict[str, str]]
 
 
 class TrecToTQuery(NamedTuple):
     query_id: str
-    text: str
-    title: str
-    domain: str
-    sentence_annotations: List[Dict]
+    query: str
 
 
 class TrecToTDocs(BaseDocs):
@@ -39,23 +36,29 @@ class TrecToTDocs(BaseDocs):
     def docs_iter(self):
         return iter(self.docs_store())
 
+    def parse_sections(self, doc):
+        sections = {}
+        for s in doc["sections"]:
+            sections[s["section"]] = doc["text"][s["start"]:s["end"]]
+        doc["sections"] = sections
+        return doc
+
     def _docs_iter(self):
         with self._dlc.stream() as stream:
             for line in stream:
-                data = json.loads(line)
-                yield TrecToTDoc(**data)
+                yield TrecToTDoc(**self.parse_sections(json.loads(line)))
 
     def docs_cls(self):
         return TrecToTDoc
 
     def docs_store(self, field='doc_id'):
         return PickleLz4FullStore(
-            path=f'{ir_datasets.util.home_path() / NAME}/docs.pklz4',
+            path=f'{ir_datasets.util.home_path()}/trec-tot24/docs.pklz4',
             init_iter_fn=self._docs_iter,
             data_cls=self.docs_cls(),
             lookup_field=field,
             index_fields=[field],
-            count_hint=231852
+            count_hint=N_DOCS
         )
 
     def docs_count(self):
@@ -86,12 +89,7 @@ class TrecToTQueries(BaseQueries):
         with self._dlc.stream() as stream:
             for line in stream:
                 data = json.loads(line)
-
-                yield TrecToTQuery(query_id=data["id"],
-                                   text=data["text"],
-                                   title=data["title"],
-                                   domain=data["domain"],
-                                   sentence_annotations=data["sentence_annotations"])
+                yield TrecToTQuery(**data)
 
     def queries_cls(self):
         return TrecToTQuery
@@ -114,8 +112,7 @@ def register(path):
     # corpus
     corpus = path / "corpus.jsonl"
 
-    for split in {"train", "dev", "test"}:
-
+    for split in {"train-2024", "dev1-2024", "dev2-2024", "test-2024"}:
         name = split
 
         # queries
@@ -129,10 +126,11 @@ def register(path):
             TrecToTQueries(name, LocalFileStream(queries)),
         ]
 
+        has_qrel = False
         # no qrel for test set
-        if split != "test":
+        if split != "test-2024":
             qrel = path / split / "qrel.txt"
-
+            has_qrel = True
             components.append(TrecQrels(LocalFileStream(qrel), qrel_defs))
 
         ds = ir_datasets.Dataset(
@@ -140,7 +138,7 @@ def register(path):
         )
 
         ir_datasets.registry.register(NAME + ":" + name, ds)
-        log.info(f"registered: {NAME}:{name}")
+        log.info(f"registered: {NAME}:{name} [qrel={has_qrel}]")
 
 
 if __name__ == '__main__':
@@ -151,7 +149,7 @@ if __name__ == '__main__':
 
     sets = []
 
-    for split in {"train", "dev", "test"}:
+    for split in {"train-2024", "dev1-2024", "dev2-2024", "test-2024"}:
         name = split
         sets.append(NAME + ":" + name)
 
@@ -182,7 +180,7 @@ if __name__ == '__main__':
     print(f"example query: {q}")
 
     n_docs = 0
-    dataset = ir_datasets.load("trec-tot:train")
+    dataset = ir_datasets.load("trec-tot:train-2024")
     doc = None
     for doc in dataset.docs_iter():
         n_docs += 1

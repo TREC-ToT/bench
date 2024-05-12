@@ -1,25 +1,23 @@
 import argparse
-import os
+import json
 import logging
-from collections import Counter, defaultdict
-
-import tot
+import os
 import re
-from bm25 import create_index, METRICS
+import subprocess
+from collections import Counter, defaultdict
+from datetime import datetime
+
 import ir_datasets
-from pyserini.search.lucene import LuceneSearcher
-from tqdm import tqdm
-from thefuzz import fuzz, process
+import pandas as pd
 import pytrec_eval
 import qwikidata
-from datetime import datetime
+from pyserini.search.lucene import LuceneSearcher
 from qwikidata.linked_data_interface import get_entity_dict_from_api
-from qwikidata.entity import WikidataItem
+from thefuzz import fuzz, process
+from tqdm import tqdm
 
+import tot
 from src import utils
-import json
-import subprocess
-import pandas as pd
 
 log = logging.getLogger("gpt_post")
 

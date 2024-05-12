@@ -1,30 +1,28 @@
+import logging
 import os
 import random
 
 import ir_datasets
-
-from sentence_transformers import SentenceTransformer, InputExample, losses, evaluation
+from sentence_transformers import InputExample, evaluation
 from torch.utils.data import Dataset
 from torch.utils.data.dataset import T_co
-import logging
-
-from src import utils
 
 log = logging.getLogger(__name__)
 
 
 class SBERTDataset(Dataset):
-    POS_LABEL = 1.0
-    NEG_LABEL = 0.0
+    POS_LABEL = 1
+    NEG_LABEL = 0
 
-    def __init__(self, dataset: ir_datasets.Dataset, query_type, negatives):
+    def __init__(self, dataset: ir_datasets.Dataset, negatives, out_type, n_negatives):
         self.d = dataset
+        self.out_type = out_type
+        self.n_negatives = n_negatives
 
         # qid -> doc_id
         self.pos = {}
         # qid -> set of negatives
         self.neg = {}
-        self.query_type = query_type
 
         self.qid_to_query = {}
         for q in self.d.queries_iter():
@@ -47,7 +45,7 @@ class SBERTDataset(Dataset):
             self.pos[qrel.query_id] = qrel.doc_id
 
             query = self.qid_to_query[qrel.query_id]
-            text = utils.get_query(query, self.query_type)
+            text = query.query
 
             pos_doc = docstore.get(qrel.doc_id).text
 
@@ -57,23 +55,65 @@ class SBERTDataset(Dataset):
             self.corpus[qrel.doc_id] = pos_doc
 
             self.neg[qrel.query_id] = []
-            for neg_docid in negatives[qrel.query_id]:
+            for neg_docid in negatives[qrel.query_id][:self.n_negatives]:
                 neg_doc = docstore.get(neg_docid).text
                 self.corpus[neg_docid] = neg_doc
                 self.neg[qrel.query_id].append(neg_doc)
 
-        self.idx_to_qid = {i: qid for (i, qid) in enumerate(self.qid_to_query)}
+        if self.out_type == "triplet":
+            self.idx_to_qid = {i: qid for (i, qid) in enumerate(self.qid_to_query)}
+        elif self.out_type == "contrastive":
+            # idx -> [(qid1, pos_1, +), (qid1, neg_1, -), (qid1, neg_2, -), ...]
+            self.idx_to_qid = {}
+            for qid in self.qid_to_query:
+                self.idx_to_qid[len(self.idx_to_qid)] = (qid, self.corpus[self.qrel[qid]], self.POS_LABEL)
+                for n in self.neg[qid]:
+                    self.idx_to_qid[len(self.idx_to_qid)] = (qid, n, self.NEG_LABEL)
+        else:
+            raise NotImplementedError(self.out_type)
 
     def __getitem__(self, index) -> T_co:
-        qid = self.idx_to_qid[index]
-        query_text = self.queries[qid]
-        pos_text = self.corpus[self.qrel[qid]]
-        neg_text = random.choice(self.neg[qid])
-
-        return InputExample(texts=[query_text, pos_text, neg_text])
+        if self.out_type == "triplet":
+            qid = self.idx_to_qid[index]
+            query_text = self.queries[qid]
+            pos_text = self.corpus[self.qrel[qid]]
+            neg_text = random.choice(self.neg[qid])
+            return InputExample(texts=[query_text, pos_text, neg_text])
+        elif self.out_type == "contrastive":
+            qid, text, label = self.idx_to_qid[index]
+            return InputExample(texts=[self.queries[qid], text], label=label)
+        else:
+            raise NotImplementedError(self.out_type)
 
     def __len__(self):
         return len(self.idx_to_qid)
+
+
+class SBERTDatasets(Dataset):
+    """
+    Wrapper for multiple SBERTDatasets
+    """
+
+    def __init__(self, datasets, negatives, out_type, n_negatives):
+        self.n_datasets = len(datasets)
+        self.datasets = [SBERTDataset(datasets[i], negatives[i],
+                                      out_type, n_negatives) for i in range(self.n_datasets)]
+
+        # idx -> (dataset, idx)
+        self.idx_to_dset_idx = {}
+        curr_idx = 0
+        for d in self.datasets:
+            for didx in range(len(d)):
+                self.idx_to_dset_idx[curr_idx] = (d, didx)
+                curr_idx += 1
+        assert len(self) == curr_idx
+
+    def __getitem__(self, index) -> T_co:
+        dset, didx = self.idx_to_dset_idx[index]
+        return dset[didx]
+
+    def __len__(self):
+        return sum(len(_) for _ in self.datasets)
 
 
 def get_documents(dataset: ir_datasets.Dataset):

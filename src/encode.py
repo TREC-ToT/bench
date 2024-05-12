@@ -1,49 +1,63 @@
+import logging
+
 import faiss
+import ir_datasets
 import numpy as np
 import torch
-from sentence_transformers import SentenceTransformer, InputExample, losses
+from sentence_transformers import SentenceTransformer
+from sentence_transformers.util import batch_to_device
+from tqdm import tqdm, trange
 
-import ir_datasets
-
-from src import data, utils
-import logging
+from src import data
 
 log = logging.getLogger(__name__)
 
 
 def encode_dataset_faiss(model: SentenceTransformer, embedding_size: int, dataset: ir_datasets.Dataset, device,
-                         encode_batch_size):
+                          encode_batch_size, normalize_embeddings=False):
+    log.info("loading docs")
     doc_ids, documents = data.get_documents(dataset)
 
     idx_to_docid = {}
     docid_to_idx = {}
-    for idx, doc_id in enumerate(doc_ids):
+    for idx, doc_id in tqdm(enumerate(doc_ids), desc="pre-encode indexing"):
         idx_to_docid[idx] = doc_id
         docid_to_idx[doc_id] = idx
+    log.info("loading docs complete")
 
-    model.eval()
+    model = model.eval().to(device)
 
-    with torch.no_grad():
-        embeddings = model.encode(documents,
-                                  batch_size=encode_batch_size,
-                                  show_progress_bar=True, device=device,
-                                  convert_to_numpy=True)
+    all_embeddings = []
+    for start_index in trange(0, len(documents), encode_batch_size, desc="Batches"):
+        sentences_batch = documents[start_index:start_index + encode_batch_size]
+        features = batch_to_device(model.tokenize(sentences_batch), device)
 
+        with torch.no_grad():
+            out_features = model.forward(features)
+            embeddings = out_features["sentence_embedding"]
+            embeddings = embeddings.detach()
+            if normalize_embeddings:
+                embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
+
+            embeddings = embeddings.cpu().numpy()
+
+            all_embeddings.extend(embeddings)
+
+    all_embeddings = np.asarray(all_embeddings)
     index = faiss.IndexFlatIP(embedding_size)
     indexwmap = faiss.IndexIDMap(index)
-    indexwmap.add_with_ids(embeddings, np.arange(len(doc_ids)))
-
+    indexwmap.add_with_ids(all_embeddings, np.arange(len(doc_ids)))
     return indexwmap, (idx_to_docid, docid_to_idx)
 
 
-def create_run_faiss(model: SentenceTransformer, dataset: ir_datasets.Dataset, query_type, device, eval_batch_size,
+def create_run_faiss(model: SentenceTransformer, dataset: ir_datasets.Dataset, device, eval_batch_size,
                      index: faiss.IndexIDMap, idx_to_docid, docid_to_idx, top_k):
     model.eval()
 
     qids = []
     queries = []
     for query in dataset.queries_iter():
-        queries.append(utils.get_query(query, query_type))
+        queries.append(query.query)
         qids.append(query.query_id)
 
     with torch.no_grad():
