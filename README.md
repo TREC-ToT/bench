@@ -1,9 +1,9 @@
-# Benchmarks for TREC-ToT (2023)
+# Benchmarks for TREC-ToT (2024)
 
 The following benchmarks (& runs) are available. Results are for the dev2 set.:
 
 
-| Benchmark            | Runfiles | NDCG@10 | NDCG@1000 |  MRR |R@1000  |
+| Benchmark            | Runfiles | NDCG@10 | NDCG@1000 |  MRR@1000 |R@1000  |
 |----------------------|----------|----------|-----------------|-------|----|
 | [BM25](BM25.md) (k1=1, b=1.0) |  [runs](runs/bm25/) | 0.0657  |0.1033| 0.0590 | 0.3600|
 | [Dense Retrieval (SBERT)](DENSE.md) (DR) |  [runs](runs/DR/) | 0.1040 | 0.1665   | 0.0901  | 0.5600| 
