@@ -1,22 +1,18 @@
 # Benchmarks for TREC-ToT (2023)
 
-The following benchmarks (& runs) are available:
+The following benchmarks (& runs) are available. Results are for the dev2 set.:
 
 
-| Benchmark            | Runfiles | Dev-DCG | Dev-Success@1000 | Dev-MRR  |
-|----------------------|----------|----------|-----------------|-------|
-| [BM25](BM25.md) (k1=0.8, b=1.0) |  [train](runs/bm25/train.run), [dev](runs/bm25/dev.run)     | 0.1314 |    0.4067 | 0.0881 |
-| [Dense Retrieval (SBERT)](DENSE.md) (Distilbert) |  [train](runs/distilbert/train.run), [dev](runs/distilbert/dev.run)  | 0.1627 |  0.6600  |  0.0743 |
-| [GPT-4](GPT4.md)* | [train](runs/gpt4/train.run), [dev](runs/gpt4/dev.run) | 0.2407 | 0.3200 | 0.2180 | 
-
-*: GPT-4 generates 20 candidates at most. See [GPT4](GPT4.md) for more details.
+| Benchmark            | Runfiles | NDCG@10 | NDCG@1000 |  MRR |R@1000  |
+|----------------------|----------|----------|-----------------|-------|----|
+| [BM25](BM25.md) (k1=1, b=1.0) |  [runs](runs/bm25/) | 0.0657  |0.1033| 0.0590 | 0.3600|
+| [Dense Retrieval (SBERT)](DENSE.md) (DR) |  [runs](runs/DR/) | 0.1040 | 0.1665   | 0.0901  | 0.5600| 
 
 
 **Note**: The current repository only supports the 2024 version of the corpus/queries. 
-For using the 2023 version, please use `tot23.py` instead, and change the `ir_dataset` names
+For using the 2023 version, refer to the [2023 release](https://github.com/TREC-ToT/bench/releases/tag/2023), use `tot23.py` instead, and change the `ir_dataset` names
 used by baselines inside the code.  
  
-
 ## Initial setup 
 
 ```
