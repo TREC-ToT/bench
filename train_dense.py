@@ -241,7 +241,7 @@ if __name__ == '__main__':
             for split, run in runs.items():
                 if "test" in split:
                     continue
-                negatives_path = os.path.join(args.negatives_out, f"{split}-negatives.json")
+                negatives_path = os.path.join(args.negatives_out, f"{split.split('-')[0]}-negatives.json")
                 qrel = split_qrels[split]
                 for qid, hits in run.items():
                     hits = sorted(hits.items(), key=lambda _: -_[1])
