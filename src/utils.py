@@ -82,6 +82,12 @@ def write_json(d, path, indent=None, zipped=False):
             json.dump(d, writer, indent=indent)
 
 
+def write_jsonl(list_of_dicts, path):
+    with open(path, "w") as writer:
+        for item in list_of_dicts:
+            writer.write(json.dumps(item) + "\n")
+
+
 def create_queries(dataset):
     queries = []
     n_empty = 0

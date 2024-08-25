@@ -62,10 +62,17 @@ if __name__ == '__main__':
     parser.add_argument("--n_negatives", default=30, type=int, help="number of negatives to obtain")
     parser.add_argument("--encode_after_train", action="store_true", default=False, help="encode & run after training ")
     parser.add_argument("--encode_norm", action="store_true", default=False, help="normalize embeds")
+    parser.add_argument("--no_train", action="store_true", default=False, help="if set, only does inference if")
     logging.basicConfig(level=logging.INFO,
                         format='[%(asctime)s] %(levelname)s - %(message)s')
 
     args = parser.parse_args()
+
+    if args.no_train:
+        assert args.encode_after_train
+
+    train_model = not args.no_train
+
     utils.set_seed(args.seed)
     log.info(f"args: {args}")
 
@@ -112,66 +119,67 @@ if __name__ == '__main__':
         n_negatives=args.n_train_negatives
     )
 
-    log.info(f"training model for {args.epochs} epochs [train_len={len(train_data)}]")
-    train_dataloader = DataLoader(train_data,
-                                  shuffle=True,
-                                  batch_size=args.batch_size)
+    if train_model:
+        log.info(f"training model for {args.epochs} epochs [train_len={len(train_data)}]")
+        train_dataloader = DataLoader(train_data,
+                                      shuffle=True,
+                                      batch_size=args.batch_size)
 
-    args.loss_fn = "mnrl"
-    if args.loss_fn == "mnrl":
-        train_loss = losses.MultipleNegativesRankingLoss(model=model)
-    elif args.loss_fn == "triplet":
-        assert args.loss_margin is not None
-        loss_distances = {
-            "cosine": TripletDistanceMetric.COSINE,
-            "euclidean": TripletDistanceMetric.EUCLIDEAN
-        }
-        assert args.loss_distance is not None and args.loss_distance in loss_distances
-        train_loss = losses.TripletLoss(model=model,
-                                        distance_metric=args.loss_distance,
-                                        triplet_margin=args.loss_margin)
-    elif args.loss_fn == "contrastive":
-        assert args.loss_margin is not None
-        loss_distances = {
-            "cosine": SiameseDistanceMetric.COSINE,
-            "euclidean": SiameseDistanceMetric.EUCLIDEAN
-        }
-        assert args.loss_distance is not None and args.loss_distance in loss_distances
-        train_loss = losses.ContrastiveLoss(model=model,
+        args.loss_fn = "mnrl"
+        if args.loss_fn == "mnrl":
+            train_loss = losses.MultipleNegativesRankingLoss(model=model)
+        elif args.loss_fn == "triplet":
+            assert args.loss_margin is not None
+            loss_distances = {
+                "cosine": TripletDistanceMetric.COSINE,
+                "euclidean": TripletDistanceMetric.EUCLIDEAN
+            }
+            assert args.loss_distance is not None and args.loss_distance in loss_distances
+            train_loss = losses.TripletLoss(model=model,
                                             distance_metric=args.loss_distance,
-                                            margin=args.loss_margin)
-    elif args.loss_fn == "online_contrastive":
-        assert args.loss_margin is not None
-        loss_distances = {
-            "cosine": SiameseDistanceMetric.COSINE,
-            "euclidean": SiameseDistanceMetric.EUCLIDEAN
+                                            triplet_margin=args.loss_margin)
+        elif args.loss_fn == "contrastive":
+            assert args.loss_margin is not None
+            loss_distances = {
+                "cosine": SiameseDistanceMetric.COSINE,
+                "euclidean": SiameseDistanceMetric.EUCLIDEAN
+            }
+            assert args.loss_distance is not None and args.loss_distance in loss_distances
+            train_loss = losses.ContrastiveLoss(model=model,
+                                                distance_metric=args.loss_distance,
+                                                margin=args.loss_margin)
+        elif args.loss_fn == "online_contrastive":
+            assert args.loss_margin is not None
+            loss_distances = {
+                "cosine": SiameseDistanceMetric.COSINE,
+                "euclidean": SiameseDistanceMetric.EUCLIDEAN
+            }
+            assert args.loss_distance is not None and args.loss_distance in loss_distances
+            train_loss = losses.OnlineContrastiveLoss(model=model,
+                                                      distance_metric=args.loss_distance,
+                                                      margin=args.loss_margin)
+        else:
+            raise NotImplementedError(args.loss_fn)
+
+        val_evaluator = data.get_ir_evaluator(st_data["dev2-2024"], name=f"dev2",
+                                              mrr_at_k=[1000],
+                                              ndcg_at_k=[10, 1000],
+                                              corpus_chunk_size=args.encode_batch_size)
+
+        optimizer_params = {
+            "lr": args.lr
         }
-        assert args.loss_distance is not None and args.loss_distance in loss_distances
-        train_loss = losses.OnlineContrastiveLoss(model=model,
-                                                  distance_metric=args.loss_distance,
-                                                  margin=args.loss_margin)
-    else:
-        raise NotImplementedError(args.loss_fn)
 
-    val_evaluator = data.get_ir_evaluator(st_data["dev2-2024"], name=f"dev2",
-                                          mrr_at_k=[1000],
-                                          ndcg_at_k=[10, 1000],
-                                          corpus_chunk_size=args.encode_batch_size)
-
-    optimizer_params = {
-        "lr": args.lr
-    }
-
-    # Tune the model
-    model.fit(train_objectives=[(train_dataloader, train_loss)],
-              evaluation_steps=args.evaluation_steps,
-              output_path=os.path.join(model_dir, "model"),
-              evaluator=val_evaluator,
-              epochs=args.epochs,
-              warmup_steps=args.warmup_steps,
-              optimizer_params=optimizer_params,
-              weight_decay=args.weight_decay,
-              save_best_model=True)
+        # Tune the model
+        model.fit(train_objectives=[(train_dataloader, train_loss)],
+                  evaluation_steps=args.evaluation_steps,
+                  output_path=os.path.join(model_dir, "model"),
+                  evaluator=val_evaluator,
+                  epochs=args.epochs,
+                  warmup_steps=args.warmup_steps,
+                  optimizer_params=optimizer_params,
+                  weight_decay=args.weight_decay,
+                  save_best_model=True)
 
     if args.encode_after_train:
         run_id = args.run_id

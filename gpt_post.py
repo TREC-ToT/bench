@@ -17,6 +17,7 @@ from thefuzz import fuzz, process
 from tqdm import tqdm
 
 import tot
+from bm25 import METRICS
 from src import utils
 
 log = logging.getLogger("gpt_post")
@@ -35,7 +36,7 @@ def create_title_index(dataset, dest_folder, index, gather_wikidata_aliases, wik
 
     log.info(f"gather_wikidata_aliases: {gather_wikidata_aliases}")
     for raw_doc in tqdm(dataset.docs_iter(), desc="gathering aliases"):
-        aliases[raw_doc.doc_id] = {raw_doc.page_title}
+        aliases[raw_doc.doc_id] = {raw_doc.title}
 
         if gather_wikidata_aliases:
             went = wikicache.get(raw_doc.wikidata_id)
@@ -138,7 +139,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("gpt_post", description="post process outputfrom GPT, and compute run")
     parser.add_argument("--input", required=True, help="output from GPT (json)")
 
-    parser.add_argument("--split", required=True, choices={"train", "dev", "test"}, help="corresponding split")
+    parser.add_argument("--split", required=True, help="corresponding split")
     parser.add_argument("--gather_wikidata_aliases", action="store_true", default=False,
                         help="if set, gathers aliases from Wikidata (recommended, takes time)")
     parser.add_argument("--data_path", required=True, help="location to dataset")
@@ -148,8 +149,7 @@ if __name__ == '__main__':
     parser.add_argument("--run_id", required=True, help="run id (required if run_format = trec_eval)")
     parser.add_argument("--ref_run", default=None, help="if provided, this run is used to break ties")
 
-    parser.add_argument("--metrics", required=False, default="recall_1,recall_10,recall_20,ndcg_cut_20,recip_rank",
-                        help="csv - metrics to evaluate")
+    parser.add_argument("--metrics", required=False, default=METRICS, help="csv - metrics to evaluate")
     parser.add_argument("--docs_path", default="./anserini_title_docs",
                         help="path to store (temp) documents for indexing")
     parser.add_argument("--index_path", default="./anserini_title_indices", help="path to store (all) indices")

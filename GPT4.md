@@ -40,7 +40,7 @@ ndcg                  	all	0.2407
 
 ### Converting LLM output to a run
 
-- ```pip install qwikidata```
+- ```pip install qwikidata thefuzz```
 - Create a JSONL file that matches the output in ./llm_example_runs/ex_out.jsonl
 - Run: 
 ```
