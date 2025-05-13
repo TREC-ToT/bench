@@ -1,0 +1,4 @@
+click
+python-terrier==0.13.0
+tirex-tracker>=0.2.14
+git+https://github.com/allenai/ir_datasets.git

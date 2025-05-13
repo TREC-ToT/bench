@@ -1,0 +1,10 @@
+# docker build -f .devcontainer/Dockerfile.dev -t mam10eks/trec-tot-pyterrier-baseline:dev-0.0.1 .
+FROM ubuntu:jammy
+
+RUN apt-get update && apt-get install -y openjdk-11-jdk python3 python3-pip git
+
+ADD requirements.txt /
+
+# Install dependencies and ensure pyterrier resources are cached
+RUN pip3 install -r /requirements.txt \
+	&& rm /requirements.txt
