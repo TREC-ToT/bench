@@ -43,7 +43,7 @@ def create_run(index_directory, dataset, output_file):
         with tempfile.TemporaryDirectory() as queries_dir:
             with open(Path(queries_dir) / "queries.jsonl", "w") as f:
                 for i in dataset.queries_iter():
-                    f.write(json.dumps({"id": i.query_id, "query": i.default_text()}) + '\n')
+                    f.write(json.dumps({"id": i.query_id, "title": i.default_text()}) + '\n')
 
                 cmd = f"""java -cp /app/anserini.jar io.anserini.search.SearchCollection -index {index_directory} -bm25 -topics {queries_dir}/queries.jsonl -topicReader JsonString -output {output_file} -threads 1 """.split()
 
