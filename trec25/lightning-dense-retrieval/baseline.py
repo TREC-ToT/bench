@@ -31,7 +31,7 @@ def create_run(index_directory, data_module, bi_encoder, output_file):
     trainer = LightningIRTrainer(callbacks=[callback], logger=False, enable_checkpointing=False)
     if not (output_file / "retrieval-ir-metadata.yml").exists():        
         with tracking(export_file_path=output_file / "retrieval-ir-metadata.yml"):
-            trainer.search(module, data_module)
+            trainer.search(bi_encoder, data_module)
 
 @click.command()
 @click.option("--dataset", type=str, required=True, help="The dataset id in ir_datasets (might be from an ir_datasets extension).")
