@@ -33,7 +33,7 @@ def create_run(index_directory, data_module, bi_encoder, output_file):
 @click.option("--index", type=Path, required=True, help="The index directory.")
 def main(dataset, output, index, model_name_or_path):
     bi_encoder = BiEncoderModule(model_name_or_path=model_name_or_path)
-    data_module = LightningIRDataModule(inference_datasets=[DocDataset(dataset)], inference_batch_size=256)
+    data_module = LightningIRDataModule(inference_datasets=[DocDataset(dataset)], inference_batch_size=1024)
 
     index = get_index(data_module, bi_encoder, index)
 
