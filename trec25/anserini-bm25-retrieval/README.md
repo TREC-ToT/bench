@@ -22,7 +22,9 @@ The runs for all splits are available:
 
 A pre-built anserini index is available online so that you can make faster experimentation (**Attention:** we still verify the index and move it to Zenodo as soon as it is finalized.):
 
-- [https://files.webis.de/data-in-progress/trec-tot-2025-indices/trec-tot-2025-anserini-index.zip] (size: 1.7GB, md5sum: b04afdf33519013bf08857005a6cbd88)
+| Index | Size | md5 |
+|-------|------|-----|
+|[trec-tot-2025-anserini-index.zip](https://files.webis.de/data-in-progress/trec-tot-2025-indices/trec-tot-2025-anserini-index.zip) | 1.7GB | b04afdf33519013bf08857005a6cbd88|
 
 You can download and extract this index if you want to re-run or modify this approach:
 
