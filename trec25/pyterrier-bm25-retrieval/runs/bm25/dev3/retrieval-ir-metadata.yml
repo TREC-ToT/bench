@@ -1,5 +1,5 @@
 "implementation":
-  "executable": !!null "null"
+  "executable": !!string "./baseline.py --output runs/bm25/dev3/run.txt.gz --index trec-tot-2025-pyterrier-index --dataset trec-tot/2025/dev3"
   "python":
     "interactive": !!bool "false"
     "modules": "3.10.12"
@@ -85,11 +85,10 @@
   "script":
     "path": "/app/baseline.py"
   "source":
-    "archive":
-      "path": "runs/bm25/dev3/.tirex-tracker/code.zip"
-      "script path": "baseline.py"
-    "is repo": !!int "0"
-    "lang": !!null "null"
+    "repository": "git@github.com:TREC-ToT/bench.git"
+    "commit": "13c10ac6e2a6109fbd93b805f1d0d47c815031b2"
+    "branch": "main"
+    "devcontainer": {"image": "mam10eks/trec-tot-pyterrier-baseline:dev-0.0.1"}
 "platform":
   "hardware":
     "cpu":
