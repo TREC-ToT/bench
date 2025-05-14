@@ -15,7 +15,7 @@ The runs for all splits are available:
 | trec-tot/2025/train | [runs/train/run.txt.gz](runs/train/run.txt.gz) |
 | trec-tot/2025/dev1  | [runs/dev1/run.txt.gz](runs/dev1/run.txt.gz)   |
 | trec-tot/2025/dev2  | [runs/dev2/run.txt.gz](runs/dev2/run.txt.gz)   |
-| trec-tot/2025/dev3  | [trec-tot/2025/dev3](trec-tot/2025/dev3)       |
+| trec-tot/2025/dev3  | [runs/dev3/run.txt.gz](runs/dev3/run.txt.gz)   |
 
 
 ## Existing Indices
