@@ -9,8 +9,4 @@ ADD requirements.txt /
 RUN pip3 install -r /requirements.txt \
 	&& rm /requirements.txt \
 	&& mkdir /app \
-	&& wget https://repo1.maven.org/maven2/io/anserini/anserini/1.0.0/anserini-1.0.0-fatjar.jar -O /app/anserini.jar \
-	&& wget https://github.com/tira-io/tirex-tracker/releases/download/0.2.14/measure-0.2.14-linux -O /app/tirex-tracker \
-	&& chmod +x /app/tirex-tracker
-
-
+	&& wget https://repo1.maven.org/maven2/io/anserini/anserini/1.0.0/anserini-1.0.0-fatjar.jar -O /app/anserini.jar

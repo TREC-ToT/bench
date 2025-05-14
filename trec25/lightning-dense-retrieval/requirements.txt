@@ -1,0 +1,4 @@
+click
+lightning-ir==0.0.4
+tirex-tracker>=0.2.14
+git+https://github.com/allenai/ir_datasets.git
