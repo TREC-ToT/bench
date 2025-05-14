@@ -9,6 +9,9 @@ from lightning_ir import (
     LightningIRDataModule,
     LightningIRTrainer,
     TorchDenseIndexConfig,
+    QueryDataset,
+    SearchCallback,
+    TorchDenseSearchConfig
 )
 
 def get_index(data_module, bi_encoder, index_directory):
