@@ -24,7 +24,11 @@ def get_index(data_module, bi_encoder, index_directory):
     return index_directory
 
 def create_run(index_directory, data_module, bi_encoder, output_file):
-    raise ValueError("foo")
+    callback = SearchCallback(index_dir=index_directory, search_config=TorchDenseSearchConfig(k=1000), save_dir=output_file)
+    trainer = LightningIRTrainer(callbacks=[callback], logger=False, enable_checkpointing=False)
+    if not (output_file / "retrieval-ir-metadata.yml").exists():        
+        with tracking(export_file_path=output_file / "retrieval-ir-metadata.yml"):
+            trainer.search(module, data_module)
 
 @click.command()
 @click.option("--dataset", type=str, required=True, help="The dataset id in ir_datasets (might be from an ir_datasets extension).")
@@ -37,6 +41,7 @@ def main(dataset, output, index, model_name_or_path):
 
     index = get_index(data_module, bi_encoder, index)
 
+    data_module = LightningIRDataModule(inference_datasets=[QueryDataset(dataset)], inference_batch_size=32)
     create_run(index, data_module, bi_encoder, output)
 
 if __name__ == "__main__":
