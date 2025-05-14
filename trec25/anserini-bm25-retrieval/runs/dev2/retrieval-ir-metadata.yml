@@ -64,6 +64,7 @@
     "repository": "git@github.com:TREC-ToT/bench.git"
     "commit": "13c10ac6e2a6109fbd93b805f1d0d47c815031b2"
     "branch": "main"
+    "devcontainer": {"image": "mam10eks/trec-tot-anserini-baseline:dev-0.0.1"}
 "platform":
   "hardware":
     "cpu":
