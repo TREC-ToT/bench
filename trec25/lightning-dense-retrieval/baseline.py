@@ -2,6 +2,7 @@
 import click
 from pathlib import Path
 from tirex_tracker import tracking
+from lightning_ir.models import DprConfig
 from lightning_ir import (
     BiEncoderModule,
     DocDataset,
@@ -11,8 +12,7 @@ from lightning_ir import (
     TorchDenseIndexConfig,
     QueryDataset,
     SearchCallback,
-    TorchDenseSearchConfig,
-    DprConfig
+    TorchDenseSearchConfig
 )
 
 def get_index(data_module, bi_encoder, index_directory):
