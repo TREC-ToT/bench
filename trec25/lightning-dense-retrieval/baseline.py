@@ -11,7 +11,8 @@ from lightning_ir import (
     TorchDenseIndexConfig,
     QueryDataset,
     SearchCallback,
-    TorchDenseSearchConfig
+    TorchDenseSearchConfig,
+    DprConfig
 )
 
 def get_index(data_module, bi_encoder, index_directory):
@@ -35,11 +36,12 @@ def create_run(index_directory, data_module, bi_encoder, output_file):
 
 @click.command()
 @click.option("--dataset", type=str, required=True, help="The dataset id in ir_datasets (might be from an ir_datasets extension).")
-@click.option("--model_name_or_path", type=str, default="webis/bert-bi-encoder", required=False, help="The Bi-Encoder model.")
+@click.option("--model_name_or_path", type=str, default="sbhargav/baseline-distilbert-tot24", required=False, help="The Bi-Encoder model.")
 @click.option("--output", type=Path, required=True, help="The output directory.")
 @click.option("--index", type=Path, required=True, help="The index directory.")
 def main(dataset, output, index, model_name_or_path):
-    bi_encoder = BiEncoderModule(model_name_or_path=model_name_or_path)
+    bi_encoder = BiEncoderModule(model_name_or_path=model_name_or_path, config=DprConfig(projection=None, query_pooling_strategy="mean", doc_pooling_strategy="mean", similarity_function="cosine"))
+
     data_module = LightningIRDataModule(inference_datasets=[DocDataset(dataset)], inference_batch_size=1024)
 
     index = get_index(data_module, bi_encoder, index)
