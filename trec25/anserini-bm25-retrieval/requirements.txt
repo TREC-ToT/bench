@@ -1,3 +1,4 @@
 click
 tirex-tracker>=0.2.14
-git+https://github.com/allenai/ir_datasets.git
+tqdm
+ir_datasets
