@@ -2,13 +2,7 @@
 
 The TREC-ToT dataset is integrated into [ir_datasets](https://github.com/allenai/ir_datasets) (you can install this via `pip3 install ir-datasets`) and we have baselines for [Anserini](trec25/anserini-bm25-retrieval), [PyTerrier](trec25/pyterrier-bm25-retrieval), and a [Dense Retrieval approach](trec25/lightning-dense-retrieval) that use this ir_datasets integration. The code and description for all baselines is available in [main/trec25](main/trec25).
 
-We make the indices available for faster experimentation/modification of our baselines:
-
-| Index | Framework |Size | md5 |
-|-------|-----------|-----|-----|
-|[trec-tot-2025-anserini-index.zip](https://files.webis.de/data-in-progress/trec-tot-2025-indices/trec-tot-2025-anserini-index.zip) | Anserini |1.7GB | b04afdf33519013bf08857005a6cbd88|
-|[trec-tot-2025-pyterrier-index.zip](https://files.webis.de/data-in-progress/trec-tot-2025-indices/trec-tot-2025-pyterrier-index.zip) | PyTerrier | 11GB | a9a22ed35abb6cea842a7c5734987c82 |
-|trec-tot-2025-dense-index|Lightning IR|**TODO**|**TODO**|
+The indices of our baselines are publicly available for faster experimentation/modification of our baselines are [publicly available](trec25#trec25/#prepared-indices).
 
 The following baselines and runs are available (more details available in [trec25/evaluation/evaluation-of-baselines.ipynb](trec25/evaluation/evaluation-of-baselines.ipynb)):
 
