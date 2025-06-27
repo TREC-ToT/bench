@@ -1,7 +1,3 @@
-# Attention:
-
-**All of this is currently work in progress, we are in the steps of doing some final checks to verify that everything is ok**
-
 # Anserini BM25 Baseline for TREC-ToT 2025
 
 This directory contains a BM25 baseline implemented in [Anserini](https://github.com/castorini/anserini) for the 2025 edition of the [TREC Tip-of-the-Tongue (ToT) Track](https://trec-tot.github.io/). This baseline tracks the experiments in the [ir_metadata format](https://www.ir-metadata.org/) (including resource consumption for GPU/CPU/RAM and used energy) with the [TIREx tracker](https://github.com/tira-io/tirex-tracker).
@@ -20,7 +16,7 @@ The runs for all splits are available:
 
 ## Existing Indices
 
-A pre-built anserini index is available online so that you can make faster experimentation (**Attention:** we still verify the index and move it to Zenodo as soon as it is finalized.):
+A pre-built anserini index is available online so that you can make faster experimentation:
 
 | Index | Size | md5 |
 |-------|------|-----|

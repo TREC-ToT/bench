@@ -1,14 +1,12 @@
 # Code and Baselines for the 2025 edition of TREC-ToT
 
-** TODO: create for every approach an oracle variant that uses the relevant document from the corpus as query to ensure that all indices are correct and that all approaches could in principle reach an recall of 1 if they use perfect query expansion.**
-
 We provide a set of baselines with pre-computed indices and runs:
 
 - Lexical retrieval:
-  - [anserini-bm25-retrieval](anserini-bm25-retrieval): Still in progress
+  - [anserini-bm25-retrieval](anserini-bm25-retrieval): Lexical retrieval with [Anserini](https://github.com/castorini/anserini).
   - [chatnoir-retrieval](chatnoir-retrieval): Still in progress
-  - [pyterrier-bm25-retrieval](pyterrier-bm25-retrieval): Still in progress
+  - [pyterrier-bm25-retrieval](pyterrier-bm25-retrieval): Lexical retrieval with [PyTerrier](https://github.com/terrier-org/pyterrier).
 - Dense retrieval:
-  - [lightning-dense-retrieval](lightning-dense-retrieval): Still in progress
-  - [chatnoir-retrieval](chatnoir-retrieval): Still in progress
+  - [lightning-dense-retrieval](lightning-dense-retrieval): Dense retrieval with the model [sbhargav/baseline-distilbert-tot24](https://huggingface.co/sbhargav/baseline-distilbert-tot24) implemented in [Lightning IR](https://github.com/webis-de/lightning-ir).
 
+Indices are available at HuggingFace: [https://huggingface.co/datasets/webis/TREC-ToT-Baselines](https://huggingface.co/datasets/webis/TREC-ToT-Baselines).
