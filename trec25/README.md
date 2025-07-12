@@ -18,5 +18,5 @@ The indices for our baselines are publicly available, so that you can directly r
 | Index | Framework |Size | md5 |
 |-------|-----------|-----|-----|
 |[trec-tot-2025-anserini-index.zip](https://files.webis.de/data-in-progress/trec-tot-2025-indices/trec-tot-2025-anserini-index.zip) | Anserini |1.7GB | b04afdf33519013bf08857005a6cbd88|
-|[trec-tot-2025-pyterrier-index.zip](https://files.webis.de/data-in-progress/trec-tot-2025-indices/trec-tot-2025-pyterrier-index.zip) | PyTerrier | 11GB | a9a22ed35abb6cea842a7c5734987c82 |
-|trec-tot-2025-dense-index|Lightning IR|**TODO**|**TODO**|
+|[trec-tot-2025-pyterrier-index.zip](https://files.webis.de/data-in-progress/trec-tot-2025-indices/trec-tot-2025-pyterrier-index.zip) | PyTerrier | 11GB | a9a22ed35abb6cea842a7c5734987c82 
+|[trec-tot-2025-index.zip](https://files.webis.de/data-in-progress/trec-tot-2025-indices/trec-tot-2025-index.zip) | Lightning IR (Dense Retrieval ) | 18GB | 9c61195c678e16a6146d09566f62229d |
