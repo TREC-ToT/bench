@@ -12,6 +12,7 @@ The runs for all splits are available:
 | trec-tot/2025/dev1  | [runs/dev1/run.txt.gz](runs/dev1/run.txt.gz)   |
 | trec-tot/2025/dev2  | [runs/dev2/run.txt.gz](runs/dev2/run.txt.gz)   |
 | trec-tot/2025/dev3  | [runs/dev3/run.txt.gz](runs/dev3/run.txt.gz)   |
+| trec-tot/2025/test  | [runs/test/run.txt.gz](runs/test/run.txt.gz)   |
 
 
 ## Existing Indices
@@ -20,15 +21,15 @@ A pre-built Lighnting IR index is available online so that you can make faster e
 
 | Index | Size | md5 |
 |-------|------|-----|
-|[trec-tot-2025-index.zip](https://files.webis.de/data-in-progress/trec-tot-2025-indices/trec-tot-2025-index.zip) | 17GB |  |
+|[trec-tot-2025-index.zip](https://files.webis.de/data-in-progress/trec-tot-2025-indices/trec-tot-2025-index.zip) | 18GB | 9c61195c678e16a6146d09566f62229d |
 
 You can download and extract this index if you want to re-run or modify this approach:
 
 ```
 wget https://files.webis.de/data-in-progress/trec-tot-2025-indices/trec-tot-2025-index.zip
-# md5 should be 
-md5sum trec-tot-2025-bert-bi-encoder-index.zip
-unzip trec-tot-2025-bert-bi-encoder-index.zip
+# md5 should be 9c61195c678e16a6146d09566f62229d
+md5sum trec-tot-2025-index.zip
+unzip trec-tot-2025-index.zip
 ```
 
 ## Retrieval with Docker

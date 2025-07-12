@@ -6,12 +6,13 @@ This directory contains a BM25 baseline implemented in [PyTerrier](https://githu
 
 The runs for all splits are available:
 
-| ir_dataset          | run                                            |
-|---------------------|------------------------------------------------|
-| trec-tot/2025/train | [runs/train/run.txt.gz](runs/train/run.txt.gz) |
-| trec-tot/2025/dev1  | [runs/dev1/run.txt.gz](runs/dev1/run.txt.gz)   |
-| trec-tot/2025/dev2  | [runs/dev2/run.txt.gz](runs/dev2/run.txt.gz)   |
-| trec-tot/2025/dev3  | [runs/dev3/run.txt.gz](runs/dev3/run.txt.gz)   |
+| ir_dataset          | run                                                      |
+|---------------------|----------------------------------------------------------|
+| trec-tot/2025/train | [runs/bm25/train/run.txt.gz](runs/bm25/train/run.txt.gz) |
+| trec-tot/2025/dev1  | [runs/bm25/dev1/run.txt.gz](runs/bm25/dev1/run.txt.gz)   |
+| trec-tot/2025/dev2  | [runs/bm25/dev2/run.txt.gz](runs/bm25/dev2/run.txt.gz)   |
+| trec-tot/2025/dev3  | [runs/bm25/dev3/run.txt.gz](runs/bm25/dev3/run.txt.gz)   |
+| trec-tot/2025/test  | [runs/bm25/dev3/run.txt.gz](runs/bm25/test/run.txt.gz)   |
 
 
 ## Existing Indices
